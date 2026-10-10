@@ -17,7 +17,7 @@ object TaskAnalyzer {
         TaskCategory.ELDERLY_CARE to listOf(
             "grandmother", "grandfather", "grandma", "grandpa", "elderly", "senior", "pensioner",
             "veteran", "old lady", "old man", "ateje", "apa", "babushka", "бабушк", "дедушк",
-            "пожил", "пенсионер", "әже", "ата", "care", "medicine", "pharmacy", "groceries",
+            "пожил", "пенсионер", "әже", "ата", "care", "medicine", "pharmacy", "lives alone",
         ),
         TaskCategory.MOVING to listOf(
             "move", "moving", "furniture", "sofa", "wardrobe", "fridge", "piano", "boxes",
@@ -61,7 +61,11 @@ object TaskAnalyzer {
         val text = "$title $description".lowercase()
         if (text.isBlank() || text.trim().length < 8) return null
 
-        val scores = categoryKeywords.mapValues { (_, words) -> words.count { text.hasKeyword(it) } }
+        val scores = categoryKeywords.mapValues { (category, words) ->
+            val hits = words.count { text.hasKeyword(it) }
+            // Who is being helped matters more than what is being done.
+            if (category == TaskCategory.ELDERLY_CARE) hits * 2 else hits
+        }
         val best = scores.maxByOrNull { it.value } ?: return null
         val totalHits = scores.values.sum()
         val category = if (best.value == 0) TaskCategory.EVENTS else best.key

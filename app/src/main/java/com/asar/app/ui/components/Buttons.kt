@@ -31,10 +31,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.asar.app.ui.theme.AsarInk
+import com.asar.app.ui.theme.AsarInkMuted
 import com.asar.app.ui.theme.AsarOutlineStrong
 import com.asar.app.ui.theme.AsarPrimary
 import com.asar.app.ui.theme.AsarPrimarySoft
 import com.asar.app.ui.theme.AsarSurface
+import com.asar.app.ui.theme.AsarSurfaceSoft
 
 private val ButtonShape = RoundedCornerShape(16.dp)
 
@@ -70,8 +72,9 @@ fun PrimaryButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor,
-            disabledContainerColor = AsarOutlineStrong.copy(alpha = 0.6f),
-            disabledContentColor = AsarSurface,
+            // Tonal variants keep their tint when disabled (used for status confirmations).
+            disabledContainerColor = if (containerColor == AsarPrimary) AsarSurfaceSoft else containerColor,
+            disabledContentColor = if (containerColor == AsarPrimary) AsarInkMuted else contentColor.copy(alpha = 0.85f),
         ),
         elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp),
         contentPadding = PaddingValues(horizontal = 20.dp),
