@@ -1,89 +1,57 @@
 # ASAR — volunteer marketplace
 
-**Asar** is the Kazakh tradition of neighbours coming together to help each other. This
-hackathon prototype brings that tradition to Android: people **request help**, neighbours
-**volunteer**, and anyone can switch between the two roles in one tap.
+**Asar** is the Kazakh tradition of neighbours coming together to help each other. This website
+brings it online for Almaty: people **post requests for help**, neighbours **volunteer**, and
+anyone can switch between the two roles in one tap.
 
-<p>
-  <img src="docs/screenshots/welcome.png" width="180" />
-  <img src="docs/screenshots/home.png" width="180" />
-  <img src="docs/screenshots/details.png" width="180" />
-  <img src="docs/screenshots/ai-lab.png" width="180" />
-  <img src="docs/screenshots/profile.png" width="180" />
-</p>
+Available in **Kazakh, Russian and English**. The switcher is in the header; the site starts in
+the browser's language and remembers the choice.
 
-> **Prototype notice.** No backend, no database and no network. All data is realistic mock
-> data held in memory and resets when the app is closed. Sign-in is **demo authentication
-> only** and is not secure. The "AI" features are **simulated**: transparent rule-based
-> logic running on the device, not a real AI model.
+## What it does
 
-## Tech
+- **Requests feed** with search, categories (elderly care, moving, eco, education, food, animals,
+  events, digital help) and sorting.
+- **Create a request** with title, description, category, district, date, time and team size.
+- **Apply to help**, then the requester **accepts or declines** volunteers and **marks the task
+  completed** with a rating and review.
+- **Profile** with rating, completed tasks, hours, history and verified achievements.
+- **Two-step sign-in**: password, then a 6-digit code sent by email.
+- **ASAR Assist (simulated AI)**: rule-based keyword logic in the browser, not a real AI model.
+  It suggests category, difficulty, team size and skills while you write a request, and flags
+  implausible reviews (e.g. "one volunteer carried a 500 kg piano alone") for a person to
+  double-check, without calling anyone a fraud.
 
-- Kotlin, Jetpack Compose, Material 3 (Compose BOM 2024.12.01)
-- AGP 8.7.3, Kotlin 2.0.21, Gradle 8.14.3 wrapper, `compileSdk 35`, `minSdk 26`
-- Package `com.asar.app`
-- Dependencies: AndroidX core, activity-compose, lifecycle (ViewModel), Compose UI, Material 3
-  and extended icons. Nothing else.
+## Files
 
-## Run
+| File | Purpose |
+| --- | --- |
+| `index.html` | The whole website: one file, no build step. |
+| `config.js` | Supabase URL and public key. Empty = demo mode. |
+| `supabase/schema.sql` | Database tables and security rules (row-level security). |
+| `supabase/seed.sql` | Optional demo requests in three languages. |
+| `SETUP.md` | Step-by-step guide to connect the database, email codes and hosting. |
 
-Open the project in Android Studio (Ladybug or newer) and run the `app` configuration, or:
+## Two modes
 
-```bash
-./gradlew :app:assembleDebug          # app/build/outputs/apk/debug/app-debug.apk
-./gradlew :app:installDebug           # install on a connected device/emulator
-```
+- **Demo mode** (default, `config.js` empty): no server. Data lives in the browser tab and the
+  email code is shown on screen. Just open `index.html`.
+- **Connected mode**: a real Supabase (Postgres) database for accounts, requests, applications
+  and reviews, with real 6-digit codes sent by email. The database itself enforces both sign-in
+  steps, so skipping one in the browser gives no access to data. Setup takes about 15 minutes;
+  see [SETUP.md](SETUP.md).
 
-## Web version
+## Put it online with GitHub Pages
 
-`web/index.html` is the ASAR website: the same screens, demo flow and simulated AI, in Kazakh,
-Russian and English (switcher in the header; it defaults to the browser language and remembers
-the choice). On phones it uses the bottom tab bar, on desktop a top navigation.
+In this repo: **Settings → Pages → Source: Deploy from a branch**, choose this branch and
+**/ (root)**, then **Save**. The site appears at `https://<owner>.github.io/<repo>/`.
+Add that address as the *Site URL* in Supabase (SETUP.md, step 3).
 
-It runs in two modes:
+## Demo script (about 2 minutes)
 
-- **Demo mode** (default, `web/config.js` left empty): no server; data lives in the browser tab and
-  the email code is shown on screen. Open the file in any browser.
-- **Connected mode**: a real Supabase (Postgres) database with accounts, requests, applications and
-  reviews, and **two-step sign-in**: password, then a 6-digit code sent by email. The database
-  enforces both steps through row-level security. Setup takes about 15 minutes:
-  see [`web/SETUP.md`](web/SETUP.md). Schema and demo content are in `web/supabase/`.
-
-## Demo script (≈2 minutes)
-
-1. **Welcome** → *Explore with a demo account* (or *Create account* with any name/email/6+ char password).
-2. **Create** tab → tap the *Groceries for grandma* quick start → *ASAR Assist* suggests
-   category, difficulty, team size and skills → *Use suggestions* → *Publish request*.
-   The request appears at the top of **Home** immediately.
-3. On Home switch to **Volunteer** → open your new request → *Apply to help* → *Send application*.
-4. Switch back to **Requester** (Home, Profile or the details screen) → **My Tasks** →
-   *Accept* the application.
-5. Open the request → *Mark as completed* → rate the volunteer. Tap *Try an unusual claim*
-   to see the piano example flagged **for additional verification** (never labelled fraud).
-6. **Profile** shows the new review, updated rating/completed count and an unlocked achievement.
-
-Bonus: *Profile → ASAR Assist lab* is a playground for both simulated-AI features.
-
-The seeded request *"Help my grandmother with spring cleaning"* already has two applicants,
-so accept/decline can also be shown instantly.
-
-## Project structure
-
-```
-app/src/main/java/com/asar/app/
-├── MainActivity.kt              edge-to-edge host
-├── ai/                          simulated AI (rule-based, on-device)
-│   ├── TaskAnalyzer.kt          category / difficulty / team size / skills
-│   └── ReviewVerifier.kt        plausibility check for reviews and claims
-├── data/
-│   ├── model/Models.kt          tasks, applications, reviews, achievements…
-│   ├── MockData.kt              Almaty-based demo content
-│   ├── TaskRepository.kt        in-memory store (Compose snapshot state)
-│   └── DemoAuth.kt              demo-only sign up / sign in
-└── ui/
-    ├── AsarViewModel.kt         single source of truth + all demo actions
-    ├── theme/                   colors, type, shapes, spacing, theme
-    ├── components/              buttons, cards, pills, task card, role switcher…
-    ├── navigation/              app shell, bottom bar, overlay navigation
-    └── screens/                 welcome, home, details, create, mytasks, profile, ai
-```
+1. **Create account** (or, in demo mode, *Explore with a demo account*).
+2. **Create** → tap a quick-start example → *Use suggestions* → *Publish request*.
+3. Switch to **Volunteer** → open the request → *Apply to help*.
+4. Switch to **Requester** → **My Tasks** → *Accept*.
+5. Open the request → *Mark as completed* → rate the volunteer. Tap *Try an unusual claim* to see
+   the piano example flagged for verification.
+6. **Profile** shows the review, rating and achievement.
