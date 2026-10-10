@@ -1,0 +1,1981 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ASAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: app shell — sticky top bar (desktop nav) + centered 1120px content; phones get a bottom tab bar. */
+:root {
+  --bg: #FAFAF7; --surface: #FFFFFF; --soft: #EDF3EE;
+  --primary: #246B50; --on-primary: #FFFFFF; --primary-soft: #DCEBE2; --primary-ink: #1A5039;
+  --ink: #202824; --muted: #66706B; --faint: #9AA39E;
+  --line: #E7E9E4; --line-strong: #D5DAD4;
+  --sand: #E9C46A; --sand-soft: #FBF3DF; --amber: #A9711A;
+  --info: #2F5E8C; --info-soft: #E7EEF6; --danger: #B4493A; --danger-soft: #FAEAE6;
+  --shadow: 0 1px 2px rgba(32,40,36,.04), 0 8px 24px rgba(32,40,36,.06);
+  --c-elderly: #9B4B5C; --c-moving: #A0583A; --c-eco: #3F7D62; --c-education: #3A6A93;
+  --c-food: #94701F; --c-animals: #7A4F7E; --c-events: #2E7476; --c-tech: #4F5D6B;
+  --font: "Onest", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r-sm: 12px; --r-md: 16px; --r-lg: 22px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111714; --surface: #18201C; --soft: #202B26;
+  --primary: #4FAE84; --on-primary: #0C1A13; --primary-soft: #1D3a2E; --primary-ink: #8FD3B2;
+  --ink: #E7EDE9; --muted: #A2ADA7; --faint: #6F7A74;
+  --line: #27322D; --line-strong: #34413B;
+  --sand: #E9C46A; --sand-soft: #352D1C; --amber: #E2B55C;
+  --info: #8DB5DD; --info-soft: #1C2936; --danger: #E68C7E; --danger-soft: #3A2320;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  --c-elderly: #E08FA0; --c-moving: #E39B79; --c-eco: #7CC7A4; --c-education: #8DB7E0;
+  --c-food: #DDB55C; --c-animals: #C59ACA; --c-events: #72C3C5; --c-tech: #A9B6C4;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #111714; --surface: #18201C; --soft: #202B26;
+  --primary: #4FAE84; --on-primary: #0C1A13; --primary-soft: #1D3a2E; --primary-ink: #8FD3B2;
+  --ink: #E7EDE9; --muted: #A2ADA7; --faint: #6F7A74;
+  --line: #27322D; --line-strong: #34413B;
+  --sand: #E9C46A; --sand-soft: #352D1C; --amber: #E2B55C;
+  --info: #8DB5DD; --info-soft: #1C2936; --danger: #E68C7E; --danger-soft: #3A2320;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  --c-elderly: #E08FA0; --c-moving: #E39B79; --c-eco: #7CC7A4; --c-education: #8DB7E0;
+  --c-food: #DDB55C; --c-animals: #C59ACA; --c-events: #72C3C5; --c-tech: #A9B6C4;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); }
+body { color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.02em; }
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .faint { color: var(--faint); } .small { font-size: 13px; }
+.grow { flex: 1; min-width: 0; }
+.row { display: flex; align-items: center; gap: 8px; }
+.stack { display: flex; flex-direction: column; }
+.ic { width: 20px; height: 20px; flex: none; }
+.ic.s { width: 16px; height: 16px; } .ic.xs { width: 14px; height: 14px; } .ic.l { width: 24px; height: 24px; }
+.accent { color: var(--primary); }
+
+/* category tint */
+[class*="cat-"] { --c: var(--c-tech); }
+.cat-elderly { --c: var(--c-elderly); } .cat-moving { --c: var(--c-moving); } .cat-eco { --c: var(--c-eco); }
+.cat-education { --c: var(--c-education); } .cat-food { --c: var(--c-food); } .cat-animals { --c: var(--c-animals); }
+.cat-events { --c: var(--c-events); } .cat-tech { --c: var(--c-tech); }
+.cat-tile { display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); border-radius: 32%; flex: none; }
+.cat-label { color: var(--c); font-weight: 600; font-size: 13px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 52px; padding: 0 20px; border-radius: var(--r-md); border: 1px solid transparent; font-weight: 600; font-size: 15px; white-space: nowrap; transition: transform .12s ease, background-color .2s, opacity .2s; }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn.sm { height: 40px; padding: 0 16px; font-size: 14px; border-radius: 14px; }
+.btn.md { height: 44px; }
+.btn.block { width: 100%; }
+.btn.primary { background: var(--primary); color: var(--on-primary); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.06); }
+.btn.secondary { background: var(--surface); border-color: var(--line-strong); color: var(--ink); }
+.btn.secondary:hover:not(:disabled) { background: var(--soft); }
+.btn.tonal { background: var(--primary-soft); color: var(--primary-ink); }
+.btn.danger-text { color: var(--danger); }
+.btn.quiet { background: none; color: var(--primary); height: auto; padding: 8px 10px; }
+.btn:disabled { cursor: default; }
+.btn.primary:disabled { background: var(--soft); color: var(--muted); }
+.btn.tonal:disabled, .btn.secondary:disabled { opacity: .85; }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; position: relative; flex: none; }
+.icon-btn:hover { background: var(--soft); }
+.dot-badge { position: absolute; top: 6px; right: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--sand); border: 2px solid var(--surface); }
+
+/* pills */
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; font-size: 12.5px; font-weight: 500; white-space: nowrap; color: var(--pf); background: var(--pb); }
+.pill .d { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.p-primary { --pf: var(--primary-ink); --pb: var(--primary-soft); }
+.p-info { --pf: var(--info); --pb: var(--info-soft); }
+.p-amber { --pf: var(--amber); --pb: var(--sand-soft); }
+.p-danger { --pf: var(--danger); --pb: var(--danger-soft); }
+.p-neutral { --pf: var(--ink); --pb: var(--soft); }
+.p-muted { --pf: var(--muted); --pb: var(--soft); }
+
+/* cards */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; }
+.card.elev { box-shadow: var(--shadow); }
+.card[role="button"] { cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+.card[role="button"]:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(32,40,36,.05), 0 14px 32px rgba(32,40,36,.09); }
+
+.avatar { border-radius: 50%; display: grid; place-items: center; font-weight: 600; color: var(--c); background: color-mix(in srgb, var(--c) 16%, var(--surface)); flex: none; letter-spacing: 0; }
+.avatar.ring { box-shadow: 0 0 0 3px var(--surface); }
+.av-stack { display: flex; } .av-stack .avatar + .avatar { margin-left: -8px; }
+
+.progress { height: 6px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+.progress > i { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .6s ease; }
+.stars { display: inline-flex; gap: 1px; color: var(--sand); }
+.stars .off { color: var(--line-strong); }
+
+/* segmented */
+.seg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--soft); border-radius: var(--r-md); padding: 4px; height: 48px; }
+.seg .thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; border-radius: 12px; background: var(--surface); box-shadow: 0 1px 3px rgba(32,40,36,.08); transition: transform .3s cubic-bezier(.3,.8,.3,1); }
+.seg button { position: relative; z-index: 1; border: 0; background: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; color: var(--muted); border-radius: 12px; }
+.seg button[aria-pressed="true"] { color: var(--ink); }
+.seg button[aria-pressed="true"] .ic { color: var(--primary); }
+
+/* fields */
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field > label { font-weight: 600; font-size: 14px; }
+.input { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-md); padding: 14px 16px; font-size: 16px; transition: border-color .2s; resize: vertical; }
+.input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
+.input.err { border-color: var(--danger); }
+.input::placeholder { color: var(--faint); }
+.help { font-size: 13px; color: var(--muted); }
+.help.err { color: var(--danger); }
+.input-wrap { position: relative; }
+.input-wrap .input { padding-left: 46px; }
+.input-wrap > .ic { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.input-wrap > .toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; width: 40px; height: 40px; display: grid; place-items: center; color: var(--muted); border-radius: 50%; }
+
+/* chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 13px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 14px; color: var(--ink); transition: background-color .2s, border-color .2s, color .2s; }
+.chip .ic { color: var(--muted); }
+.chip:hover { border-color: var(--line-strong); }
+.chip[aria-pressed="true"] { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-ink); }
+.chip[aria-pressed="true"] .ic { color: var(--primary-ink); }
+.chip.dark[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip.dark[aria-pressed="true"] .ic { color: var(--bg); }
+.chip.info { background: var(--info-soft); border-color: transparent; color: var(--info); font-weight: 500; }
+.hscroll { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.hscroll::-webkit-scrollbar { display: none; }
+.hscroll > * { flex: none; }
+
+/* ===== app shell ===== */
+#app { min-height: 100%; }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.topbar-in { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 16px; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 22px; letter-spacing: -0.04em; border: 0; background: none; padding: 0; }
+.logo svg { flex: none; }
+.nav { display: none; gap: 4px; }
+.nav button { border: 0; background: none; height: 40px; padding: 0 14px; border-radius: 12px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; position: relative; }
+.nav button:hover { background: var(--soft); color: var(--ink); }
+.nav button[aria-current="page"] { background: var(--primary-soft); color: var(--primary-ink); }
+.nav .nb { background: var(--sand); color: #202824; font-size: 11px; font-weight: 700; border-radius: 99px; min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 5px; }
+.top-role { display: none; width: 280px; }
+.top-role .seg { height: 42px; }
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 110px; }
+.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); display: grid; grid-template-columns: repeat(4, 1fr); }
+.bottom-nav button { border: 0; background: none; height: 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11.5px; font-weight: 500; color: var(--faint); position: relative; }
+.bottom-nav .bi { padding: 4px 18px; border-radius: 99px; transition: background-color .2s; position: relative; }
+.bottom-nav button[aria-current="page"] { color: var(--primary); font-weight: 700; }
+.bottom-nav button[aria-current="page"] .bi { background: var(--primary-soft); }
+.bottom-nav .create .bi { background: var(--primary); color: var(--on-primary); border-radius: 14px; padding: 5px 14px; box-shadow: 0 6px 14px color-mix(in srgb, var(--primary) 35%, transparent); }
+.bottom-nav .nb { position: absolute; top: -2px; right: 6px; background: var(--sand); color: #202824; font-size: 10px; font-weight: 700; border-radius: 99px; min-width: 16px; height: 16px; display: grid; place-items: center; }
+@media (min-width: 900px) {
+  .nav { display: flex; }
+  .top-role { display: block; }
+  .bottom-nav { display: none; }
+  .mobile-only-role { display: none; }
+  main { padding-bottom: 64px; padding-top: 28px; }
+}
+
+/* ===== welcome / auth ===== */
+.welcome { min-height: 100vh; max-width: 1120px; margin: 0 auto; padding-block: 24px; padding-inline: 20px; display: grid; gap: 24px; align-content: start; }
+.welcome .copy { display: flex; flex-direction: column; gap: 14px; }
+.welcome h1 { font-size: clamp(36px, 6vw, 58px); line-height: 1.04; font-weight: 800; letter-spacing: -0.035em; }
+.welcome .lede { font-size: 17px; color: var(--muted); max-width: 30em; }
+.welcome .ctas { display: grid; gap: 10px; max-width: 420px; margin-top: 10px; }
+.welcome .fine { font-size: 12.5px; color: var(--faint); }
+.orbit { position: relative; width: min(100%, 420px); aspect-ratio: 1; margin: 0 auto; max-width: 100%; }
+.orbit .ringa, .orbit .ringb, .orbit .core { position: absolute; border-radius: 50%; inset: 0; margin: auto; }
+.orbit .ringa { background: color-mix(in srgb, var(--soft) 55%, transparent); border: 1px solid var(--line); }
+.orbit .ringb { width: 72%; height: 72%; background: var(--soft); }
+.orbit .core { width: 44%; height: 44%; background: var(--primary-soft); display: grid; place-items: center; }
+.orbit .heart { width: 52%; height: 52%; border-radius: 50%; background: var(--primary); display: grid; place-items: center; color: var(--sand); box-shadow: 0 12px 30px color-mix(in srgb, var(--primary) 35%, transparent); }
+.orbit .b { position: absolute; transform: translate(-50%, -50%); animation: float 6s ease-in-out infinite; }
+.orbit .b > div { box-shadow: var(--shadow); background: var(--surface); padding: 4px; border-radius: 50%; }
+.orbit .b.sq > div { border-radius: 16px; padding: 5px; }
+.orbit .b.chipb > div { border-radius: 99px; padding: 8px 14px; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.orbit .b.chipb i { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+@keyframes float { 0%,100% { translate: 0 -5px; } 50% { translate: 0 5px; } }
+@media (prefers-reduced-motion: reduce) { .orbit .b { animation: none; } * { transition: none !important; } }
+@media (min-width: 900px) {
+  .welcome { grid-template-columns: 1.05fr 1fr; align-content: center; gap: 48px; }
+  .welcome .brand { grid-column: 1 / -1; }
+}
+.auth { max-width: 460px; margin: 0 auto; padding-block: 16px 40px; padding-inline: 20px; display: flex; flex-direction: column; gap: 20px; }
+.auth h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; }
+.notice { border-radius: 18px; padding: 14px 16px; display: flex; gap: 10px; font-size: 13.5px; }
+.notice.amber { background: var(--sand-soft); color: var(--ink); }
+.notice.amber .ic, .notice.amber b { color: var(--amber); }
+.notice.info { background: var(--info-soft); color: var(--ink); }
+.notice.info .ic, .notice.info b { color: var(--info); }
+.notice.err { background: var(--danger-soft); color: var(--danger); }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--amber); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ===== home ===== */
+.home-hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; margin-bottom: 26px; }
+.home-hero > * { min-width: 0; }
+.greet { display: flex; align-items: center; gap: 12px; }
+.greet .name { font-weight: 600; font-size: 16px; }
+.home-hero h1 { font-size: clamp(30px, 4.6vw, 44px); line-height: 1.08; font-weight: 800; letter-spacing: -0.035em; margin-top: 6px; }
+.search { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+.search:focus-within { border-color: var(--primary); }
+.search input { border: 0; background: none; flex: 1; min-width: 0; font-size: 16px; outline: none; }
+.search .ic { color: var(--muted); }
+.search .clear { border: 0; background: none; color: var(--muted); display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; }
+.impact { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px 4px; }
+.impact > div { text-align: center; padding: 0 6px; }
+.impact > div + div { border-left: 1px solid var(--line); }
+.impact b { display: block; font-size: 22px; color: var(--primary); letter-spacing: -0.02em; }
+.impact span { font-size: 12.5px; color: var(--muted); line-height: 1.35; display: block; }
+.impact-cap { font-size: 12px; color: var(--faint); margin-top: 8px; text-align: right; }
+.req-hero { background: var(--primary); color: var(--on-primary); border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 6px; }
+.req-hero h2 { font-size: 22px; }
+.req-hero p { opacity: .85; font-size: 14px; }
+.req-hero .row { margin-top: 10px; gap: 14px; flex-wrap: wrap; }
+.req-hero .btn { background: var(--on-primary); color: var(--primary); }
+.req-hero .manage { border: 0; background: none; color: inherit; text-align: left; font-size: 13px; padding: 0; }
+.req-hero .manage b { color: var(--sand); }
+.section-head { display: flex; align-items: flex-end; gap: 12px; margin: 26px 0 12px; }
+.section-head h2 { font-size: 20px; font-weight: 700; }
+.section-head .sub { font-size: 13px; color: var(--muted); }
+.feed { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); }
+.task { display: flex; flex-direction: column; gap: 10px; }
+.task-head { display: flex; align-items: center; gap: 12px; }
+.task-title { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.meta span { display: inline-flex; align-items: center; gap: 6px; }
+.meta .ic { color: var(--faint); }
+.slots-row { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.slots-row .ic { color: var(--primary); }
+.task-foot { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; }
+.who { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-weight: 500; }
+.who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 900px) {
+  .home-hero { grid-template-columns: 1.1fr .9fr; align-items: end; gap: 32px; }
+}
+.empty { text-align: center; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 6px; grid-column: 1 / -1; }
+.empty .em-ic { width: 64px; height: 64px; border-radius: 50%; background: var(--soft); color: var(--primary); display: grid; place-items: center; margin-bottom: 8px; }
+.empty h3 { font-size: 17px; }
+.empty p { color: var(--muted); max-width: 32em; }
+
+/* ===== details ===== */
+.back-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; font-weight: 600; }
+.details { display: grid; gap: 28px; }
+.details .main-col { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.details h1 { font-size: clamp(26px, 3.6vw, 36px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.12; }
+.details h2 { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+.details .about { font-size: 16.5px; line-height: 1.6; max-width: 62ch; }
+.facts { display: flex; flex-direction: column; gap: 14px; }
+.fact { display: flex; align-items: center; gap: 12px; }
+.fact .fi { width: 40px; height: 40px; border-radius: 12px; background: var(--soft); color: var(--primary); display: grid; place-items: center; flex: none; }
+.fact small { display: block; color: var(--muted); font-size: 12.5px; }
+.fact b { font-weight: 600; font-size: 14.5px; }
+.side-col { display: flex; flex-direction: column; gap: 14px; }
+.action-panel .btn { width: 100%; }
+.mobile-actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--surface); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+.mobile-actions .btn { width: 100%; }
+.desk-actions { display: none; }
+@media (min-width: 900px) {
+  .details { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; gap: 40px; }
+  .side-col { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); }
+  .mobile-actions { display: none; }
+  .desk-actions { display: block; }
+}
+.person { display: flex; align-items: center; gap: 12px; }
+.person .nm { font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.person .nm .ic { color: var(--primary); }
+.person .sub { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.person .sub .ic { color: var(--sand); }
+.applicant { background: color-mix(in srgb, var(--soft) 60%, var(--surface)); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.applicant q { quotes: "“" "”"; }
+.applicant .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.list { display: flex; flex-direction: column; gap: 10px; }
+
+.ai-card .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+.ai-card .st { background: var(--soft); border-radius: 14px; padding: 8px 10px; min-width: 0; }
+.ai-card .st small { display: block; font-size: 12px; color: var(--muted); }
+.ai-card .st b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.ai-card ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.ai-note { color: var(--info); font-size: 12.5px; margin-top: 6px; }
+.flag { display: flex; gap: 8px; margin-top: 10px; }
+.flag .ic { margin-top: 2px; }
+.flag b { display: block; font-size: 14px; }
+.flag span { font-size: 13px; color: var(--muted); }
+.verify-note { font-style: italic; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+/* ===== sheet ===== */
+.sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.backdrop { position: absolute; inset: 0; background: rgba(12,18,15,.45); }
+.sheet-wrap.anim .backdrop { animation: fade .2s ease; }
+.sheet-wrap.anim .sheet { animation: up .28s cubic-bezier(.2,.8,.2,1); }
+.sheet { position: relative; background: var(--surface); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 26px 26px 0 0; padding: 12px 22px calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px; }
+.sheet .grab { width: 40px; height: 4px; border-radius: 99px; background: var(--line-strong); margin: 0 auto 4px; }
+.sheet h2 { font-size: 22px; font-weight: 700; }
+@media (min-width: 640px) { .sheet-wrap { align-items: center; } .sheet { border-radius: 26px; padding-bottom: 24px; } .sheet .grab { display: none; } }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+.rate { display: flex; gap: 4px; }
+.rate button { border: 0; background: none; padding: 2px; color: var(--line-strong); border-radius: 50%; }
+.rate button.on { color: var(--sand); }
+.rate .ic { width: 34px; height: 34px; }
+.preview { background: color-mix(in srgb, var(--soft) 60%, var(--surface)); border-radius: 16px; padding: 12px; }
+hr.sep { border: 0; border-top: 1px solid var(--line); margin: 6px 0; width: 100%; }
+
+/* ===== create ===== */
+.create { display: grid; gap: 22px; grid-template-areas: "top" "ai" "rest"; }
+.create .top { grid-area: top; display: flex; flex-direction: column; gap: 18px; }
+.create .ai { grid-area: ai; }
+.create .rest { grid-area: rest; display: flex; flex-direction: column; gap: 26px; }
+.create h1, .page-h1 { font-size: clamp(30px, 4vw, 40px); font-weight: 800; letter-spacing: -0.035em; }
+.sub-h { color: var(--muted); margin-top: 4px; }
+.fs-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; display: flex; gap: 8px; }
+.fs-title .help { margin-left: auto; }
+.days { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.days::-webkit-scrollbar { display: none; }
+.day { flex: none; width: 60px; border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 9px 0; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.day small { font-size: 11px; color: var(--muted); font-weight: 600; }
+.day b { font-size: 20px; }
+.day[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.day[aria-pressed="true"] small { color: inherit; opacity: .85; }
+.stepper { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 8px; max-width: 420px; }
+.stepper button { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--primary-soft); color: var(--primary-ink); display: grid; place-items: center; }
+.stepper button:disabled { background: var(--soft); color: var(--faint); }
+.stepper .v { flex: 1; text-align: center; line-height: 1.1; }
+.stepper .v b { font-size: 28px; display: block; }
+.stepper .v small { color: var(--muted); }
+.ai-placeholder { border: 1px dashed var(--line-strong); border-radius: var(--r-lg); padding: 20px; color: var(--muted); font-size: 14px; display: flex; gap: 10px; }
+.ai-placeholder .ic { color: var(--info); }
+@media (min-width: 900px) {
+  .create { grid-template-columns: minmax(0, 1fr) 380px; grid-template-areas: "top ai" "rest ai"; column-gap: 40px; align-items: start; }
+  .create .ai { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); }
+}
+
+/* ===== my tasks / profile ===== */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 12px 14px; min-width: 0; }
+.tile b { font-size: 26px; color: var(--primary); display: block; letter-spacing: -0.02em; line-height: 1.2; }
+.tile span { font-size: 12.5px; color: var(--muted); }
+.tile.hl { background: var(--primary); border-color: var(--primary); }
+.tile.hl b, .tile.hl span { color: var(--on-primary); }
+.mt-list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
+.sum-head { display: flex; align-items: center; gap: 12px; }
+.sum-head .t { font-weight: 600; line-height: 1.3; }
+.timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px; }
+.timeline i { display: block; height: 4px; border-radius: 99px; background: var(--line); }
+.timeline .on i { background: var(--primary); }
+.timeline .bad i { background: var(--danger); }
+.timeline span { font-size: 11px; font-weight: 600; color: var(--faint); }
+.timeline .on span, .timeline .bad span { color: var(--ink); }
+
+.profile { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+.ident { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.ident .halo { width: 108px; height: 108px; border-radius: 50%; background: var(--primary-soft); display: grid; place-items: center; position: relative; margin-bottom: 8px; }
+.ident .vb { position: absolute; right: 2px; bottom: 2px; width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; border: 3px solid var(--bg); }
+.ident h1 { font-size: 26px; font-weight: 700; }
+.stat .ic { color: var(--primary); }
+.stat b { font-size: 24px; display: block; margin-top: 6px; line-height: 1.2; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.ach { display: flex; flex-direction: column; gap: 4px; }
+.ach .ai-ic { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--sand-soft); color: var(--amber); margin-bottom: 6px; }
+.ach.locked { background: color-mix(in srgb, var(--soft) 50%, var(--surface)); }
+.ach.locked .ai-ic { background: var(--soft); color: var(--faint); }
+.ach.locked b { color: var(--muted); }
+.ach .by { font-size: 12px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.lab-card { background: var(--info-soft); border-color: transparent; display: flex; align-items: center; gap: 14px; }
+.lab-card .li { width: 46px; height: 46px; border-radius: 14px; background: var(--info); color: var(--info-soft); display: grid; place-items: center; flex: none; }
+.hist { padding: 6px; }
+.hist .hr { display: flex; align-items: center; gap: 12px; padding: 10px; }
+.hist .hr + .hr { border-top: 1px solid var(--line); }
+.hist .t { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.lab { display: grid; gap: 28px; }
+.lab section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.lab h2 { font-size: 20px; }
+.sample { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 9px 12px; font-size: 13px; max-width: 230px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.sample:hover { border-color: var(--line-strong); }
+@media (min-width: 900px) { .lab { grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; } .lab .notice { grid-column: 1 / -1; } }
+
+/* toast */
+#toast { position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 13px 18px; border-radius: 16px; font-size: 14px; font-weight: 500; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; max-width: calc(100% - 32px); box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (min-width: 900px) { #toast { bottom: 32px; } }
+
+/* language switch */
+.lang { display: inline-flex; background: var(--soft); border-radius: 12px; padding: 3px; gap: 2px; flex: none; }
+.lang button { border: 0; background: none; height: 34px; padding: 0 9px; border-radius: 9px; font-size: 12.5px; font-weight: 700; letter-spacing: .03em; color: var(--muted); }
+.lang button:hover { color: var(--ink); }
+.lang button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(32,40,36,.1); }
+.me-btn { border: 0; background: none; padding: 0; border-radius: 50%; flex: none; }
+.seg button { min-width: 0; padding: 0 6px; }
+.seg button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 899px) { .topbar-in { gap: 8px; } }
+.nav button { white-space: nowrap; }
+.top-role { width: 250px; flex: none; }
+.top-role .seg button { font-size: 14px; }
+.top-role .seg .ic { display: none; }
+@media (min-width: 900px) and (max-width: 1239px) { .nav .ic { display: none; } .nav button { padding: 0 11px; } .topbar-in { gap: 10px; } .logo-word { display: none; } }
+@media (max-width: 440px) { .logo-word { display: none; } .bell { display: none; } }
+
+/* two-step sign-in */
+.steps { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--faint); }
+.steps span { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 99px; background: var(--soft); }
+.steps span.on { color: var(--primary-ink); background: var(--primary-soft); }
+.steps span.done { color: var(--primary-ink); background: var(--primary-soft); opacity: .75; }
+.steps i { flex: 0 0 18px; height: 2px; border-radius: 2px; background: var(--line-strong); }
+.code-input { font-size: 26px; letter-spacing: .4em; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.code-input::placeholder { letter-spacing: .4em; }
+.boot { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 12px; }
+body.busy, body.busy * { cursor: progress !important; }
+.btn.quiet:disabled { color: var(--faint); }
+</style>
+
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Supabase settings. Leave empty to run in demo mode. -->
+<script src="config.js"></script>
+<script>
+(() => {
+"use strict";
+
+/* ================= i18n ================= */
+const LANGS = [
+  { v: "kk", label: "ҚАЗ", name: "Қазақша", locale: "kk-KZ" },
+  { v: "ru", label: "РУС", name: "Русский", locale: "ru-RU" },
+  { v: "en", label: "ENG", name: "English", locale: "en-GB" },
+];
+const LI = { en: 0, ru: 1, kk: 2 };
+let lang = (() => {
+  try { const s = localStorage.getItem("asar.lang"); if (s && LI[s] != null) return s; } catch (e) { /* storage unavailable */ }
+  const n = (navigator.language || "en").toLowerCase();
+  return n.startsWith("kk") ? "kk" : n.startsWith("ru") ? "ru" : "en";
+})();
+const locale = () => LANGS.find((l) => l.v === lang).locale;
+// Russian plural: 1 волонтёр, 2 волонтёра, 5 волонтёров
+const ruP = (n, one, few, many) => { const a = n % 10, b = n % 100; return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many; };
+/** Localised value: a plain string, or a [en, ru, kk] tuple. */
+const L = (x) => (Array.isArray(x) ? x[LI[lang]] ?? x[0] : x);
+
+const D = {
+  // welcome & auth
+  w_h1a: ["Help is closer than you ", "Помощь ближе, чем вы ", "Көмек сіз ойлағаннан да "],
+  w_h1b: ["think.", "думаете.", "жақын."],
+  w_lede: ["Asar is the Kazakh tradition of neighbours coming together to help each other. Ask for a hand or lend one in a few taps.", "Асар — казахская традиция, когда соседи собираются вместе, чтобы помочь друг другу. Попросите о помощи или помогите сами в пару касаний.", "Асар — көршілердің бір-біріне көмектесу үшін жиналатын қазақ дәстүрі. Көмек сұраңыз немесе көмектесіңіз — бірнеше түртумен."],
+  create_account: ["Create account", "Создать аккаунт", "Тіркелу"],
+  have_account: ["I already have an account", "У меня уже есть аккаунт", "Менің аккаунтым бар"],
+  explore_demo: ["Explore with a demo account", "Войти в демо-аккаунт", "Демо аккаунтпен кіру"],
+  w_fine: ["Hackathon prototype. Demo sign-in only; nothing leaves your browser.", "Прототип для хакатона. Только демо-вход, данные не покидают браузер.", "Хакатон прототипі. Тек демо кіру, деректер браузерден шықпайды."],
+  w_chip: ["3 neighbours helping", "Помогают 3 соседа", "3 көрші көмектесуде"],
+  join: ["Join your neighbours", "Присоединяйтесь к соседям", "Көршілеріңізге қосылыңыз"],
+  welcome_back: ["Welcome back", "С возвращением", "Қайта қош келдіңіз"],
+  join_sub: ["Create a profile to request help or volunteer nearby.", "Создайте профиль, чтобы просить о помощи или помогать рядом.", "Көмек сұрау немесе жақын жерде ерікті болу үшін профиль ашыңыз."],
+  back_sub: ["Sign in to continue helping your community.", "Войдите, чтобы продолжить помогать своему району.", "Қауымдастығыңызға көмектесуді жалғастыру үшін кіріңіз."],
+  sign_up: ["Sign up", "Регистрация", "Тіркелу"],
+  sign_in: ["Sign in", "Вход", "Кіру"],
+  sign_in_btn: ["Sign in", "Войти", "Кіру"],
+  full_name: ["Full name", "Имя и фамилия", "Аты-жөні"],
+  name_ph: ["e.g. Aigerim Bekova", "например, Айгерим Бекова", "мысалы, Айгерім Бекова"],
+  email: ["Email", "Эл. почта", "Электрондық пошта"],
+  password: ["Password", "Пароль", "Құпиясөз"],
+  pass_ph: ["At least 6 characters", "Минимум 6 символов", "Кемінде 6 таңба"],
+  show_pw: ["Show password", "Показать пароль", "Құпиясөзді көрсету"],
+  hide_pw: ["Hide password", "Скрыть пароль", "Құпиясөзді жасыру"],
+  e_name: ["Please enter your name.", "Введите имя.", "Атыңызды енгізіңіз."],
+  e_email: ["Please enter a valid email address.", "Введите корректный адрес почты.", "Дұрыс электрондық пошта енгізіңіз."],
+  e_pass: ["Password must be at least 6 characters.", "Пароль должен быть не короче 6 символов.", "Құпиясөз кемінде 6 таңбадан тұруы керек."],
+  e_exists: ["An account with this email already exists. Sign in instead.", "Аккаунт с этой почтой уже существует. Войдите.", "Бұл поштамен аккаунт бар. Оның орнына кіріңіз."],
+  e_wrong: ["Email or password is incorrect.", "Неверная почта или пароль.", "Пошта немесе құпиясөз қате."],
+  demo_auth_t: ["Demo authentication.", "Демо-авторизация.", "Демо аутентификация."],
+  demo_auth_b: ["This copy has no server connected. Accounts exist only in this browser tab, and the email code is shown on screen instead of being sent. Please don't use a real password.", "К этой копии не подключён сервер. Аккаунты хранятся только в этой вкладке, а код из письма показывается на экране. Не используйте настоящий пароль.", "Бұл нұсқаға сервер қосылмаған. Аккаунттар тек осы қойындыда сақталады, ал пошта коды экранда көрсетіледі. Нақты құпиясөзді қолданбаңыз."],
+  use_demo: ["Use the demo account: {e}", "Войти в демо-аккаунт: {e}", "Демо аккаунтты пайдалану: {e}"],
+  back: ["Back", "Назад", "Артқа"],
+  language: ["Language", "Язык", "Тіл"],
+
+  // shell
+  t_home: ["Home", "Главная", "Басты"],
+  t_mytasks: ["My Tasks", "Мои задачи", "Тапсырмалар"],
+  t_create: ["Create", "Создать", "Құру"],
+  t_profile: ["Profile", "Профиль", "Профиль"],
+  volunteer: ["Volunteer", "Волонтёр", "Ерікті"],
+  requester: ["Requester", "Заказчик", "Сұраушы"],
+  activity: ["Activity", "Активность", "Белсенділік"],
+  asar_home: ["ASAR home", "Главная ASAR", "ASAR басты беті"],
+
+  // home
+  hello: ["Sälem, {n}", "Сәлем, {n}", "Сәлем, {n}"],
+  city: ["Almaty, Kazakhstan", "Алматы, Казахстан", "Алматы, Қазақстан"],
+  hv_a: ["Who can you help ", "Кому вы поможете ", "Бүгін кімге "],
+  hv_b: ["today?", "сегодня?", "көмектесесіз?"],
+  hr_a: ["What do you need ", "С чем вам ", "Сізге қандай "],
+  hr_b: ["a hand with?", "нужна помощь?", "көмек керек?"],
+  search_ph: ["Search groceries, cleanup, tutoring…", "Поиск: продукты, уборка, репетитор…", "Іздеу: азық-түлік, тазалық, сабақ…"],
+  search_aria: ["Search requests", "Поиск запросов", "Өтініштерді іздеу"],
+  clear_search: ["Clear search", "Очистить поиск", "Іздеуді тазалау"],
+  imp1: ["neighbours helped this week", "соседям помогли на этой неделе", "көршіге осы аптада көмектесті"],
+  imp2: ["volunteers active nearby", "волонтёров активны рядом", "ерікті жақын маңда белсенді"],
+  imp3: ["average time to first reply", "в среднем до первого ответа", "алғашқы жауапқа орташа уақыт"],
+  min25: ["~25 min", "~25 мин", "~25 мин"],
+  imp_cap: ["Almaty pulse · demo figures", "Пульс Алматы · демо-цифры", "Алматы пульсі · демо сандар"],
+  need_hand: ["Need a hand?", "Нужна помощь?", "Көмек керек пе?"],
+  need_hand_b: ["Post a request and neighbours nearby will offer to help, usually within the hour.", "Опубликуйте запрос, и соседи рядом предложат помощь — обычно в течение часа.", "Өтініш жариялаңыз — жақын маңдағы көршілер әдетте бір сағат ішінде көмек ұсынады."],
+  create_request: ["Create request", "Создать запрос", "Өтініш құру"],
+  active_review: ["{a} active · {p} to review", "{a} активных · {p} на рассмотрении", "{a} белсенді · {p} қарауға"],
+  manage_requests: ["Manage requests →", "Управлять запросами →", "Өтініштерді басқару →"],
+  all: ["All", "Все", "Барлығы"],
+  categories: ["Categories", "Категории", "Санаттар"],
+  nearby: ["Nearby requests", "Запросы рядом", "Жақын маңдағы өтініштер"],
+  in_almaty: ["{n} in Almaty · updated just now", "{n} в Алматы · обновлено только что", "Алматыда {n} · жаңа ғана жаңартылды"],
+  sort_near: ["Sort: Nearest", "Сортировка: ближе", "Сұрыптау: ең жақын"],
+  sort_soon: ["Sort: Soonest", "Сортировка: скорее", "Сұрыптау: ең ерте"],
+  nothing: ["Nothing here yet", "Пока ничего нет", "Әзірге ештеңе жоқ"],
+  nothing_b: ["Try another category or search term, or post the first request yourself.", "Попробуйте другую категорию или запрос — или опубликуйте первый запрос сами.", "Басқа санатты немесе сөзді байқап көріңіз, не алғашқы өтінішті өзіңіз жариялаңыз."],
+
+  // time
+  today: ["Today", "Сегодня", "Бүгін"],
+  tomorrow: ["Tomorrow", "Завтра", "Ертең"],
+  yesterday: ["Yesterday", "Вчера", "Кеше"],
+  just_now: ["just now", "только что", "жаңа ғана"],
+  m_ago: ["{n}m ago", "{n} мин назад", "{n} мин бұрын"],
+  h_ago: ["{n}h ago", "{n} ч назад", "{n} сағ бұрын"],
+  d_ago: ["{n}d ago", "{n} дн назад", "{n} күн бұрын"],
+  posted: ["Posted {a}", "Опубликовано {a}", "{a} жарияланды"],
+  hours: [(v) => `${v.ap ? "~" : ""}${v.h} ${v.h === 1 ? "hour" : "hours"}`, (v) => `${v.ap ? "~" : ""}${v.h} ч`, (v) => `${v.ap ? "~" : ""}${v.h} сағ`],
+
+  // status
+  st_open: ["Open", "Открыт", "Ашық"],
+  st_ready: ["Team ready", "Команда собрана", "Команда жиналды"],
+  st_done: ["Completed", "Завершён", "Аяқталды"],
+  ap_pending: ["Pending", "На рассмотрении", "Күтуде"],
+  ap_accepted: ["Accepted", "Принят", "Қабылданды"],
+  ap_rejected: ["Declined", "Отклонён", "Қабылданбады"],
+  d_easy: ["Easy", "Легко", "Оңай"],
+  d_moderate: ["Moderate", "Средне", "Орташа"],
+  d_demanding: ["Demanding", "Сложно", "Күрделі"],
+
+  // cards
+  vol_of: [(v) => `${v.a} of ${v.n} volunteers`, (v) => `Волонтёры: ${v.a} из ${v.n}`, (v) => `Еріктілер: ${v.a}/${v.n}`],
+  spots_left: [(v) => (v.n === 1 ? "1 spot left" : `${v.n} spots left`), (v) => `${ruP(v.n, "Осталось", "Осталось", "Осталось")} ${v.n} ${ruP(v.n, "место", "места", "мест")}`, (v) => `${v.n} орын қалды`],
+  your_request: ["Your request", "Ваш запрос", "Сіздің өтінішіңіз"],
+  b_apply: ["Apply", "Откликнуться", "Өтінім беру"],
+  b_view: ["View", "Смотреть", "Көру"],
+  b_details: ["Details", "Подробнее", "Толығырақ"],
+  b_summary: ["View summary", "Итоги", "Қорытынды"],
+  b_manage: ["Manage", "Управлять", "Басқару"],
+  b_review: ["Review {n}", "Рассмотреть ({n})", "Қарау ({n})"],
+  tasks_since: [(v) => `${v.r} · ${v.d} tasks · since ${v.y}`, (v) => `${v.r} · ${v.d} ${ruP(v.d, "задача", "задачи", "задач")} · с ${v.y}`, (v) => `${v.r} · ${v.d} тапсырма · ${v.y} жылдан`],
+  verified: ["Verified", "Проверен", "Расталған"],
+
+  // details
+  req_details: ["Request details", "Детали запроса", "Өтініш мәліметтері"],
+  not_found: ["Request not found", "Запрос не найден", "Өтініш табылмады"],
+  not_found_b: ["It may have been removed.", "Возможно, он удалён.", "Ол жойылған болуы мүмкін."],
+  area: ["Area", "Район", "Аудан"],
+  away: ["{a} · {k} away", "{a} · {k} от вас", "{a} · {k} қашықтықта"],
+  when: ["When", "Когда", "Қашан"],
+  slots: ["Volunteer slots", "Места для волонтёров", "Ерікті орындары"],
+  confirmed: ["{a} of {n} confirmed", "{a} из {n} подтверждено", "{n} ішінен {a} расталды"],
+  open_n: [" · {s} open", " · {s} свободно", " · {s} бос"],
+  own_notice: ["This is your own request. For the demo you can still apply to it in volunteer mode, then switch to requester mode and accept yourself.", "Это ваш собственный запрос. Для демо можно откликнуться на него в режиме волонтёра, затем переключиться в режим заказчика и принять себя.", "Бұл — сіздің өтінішіңіз. Демо үшін оған ерікті режимінде өтінім беріп, кейін сұраушы режиміне ауысып, өзіңізді қабылдай аласыз."],
+  about: ["About this request", "О запросе", "Өтініш туралы"],
+  skills_h: ["Helpful skills", "Полезные навыки", "Пайдалы дағдылар"],
+  requested_by: ["Requested by", "Автор запроса", "Өтініш иесі"],
+  assist_check: ["ASAR Assist check", "Проверка ASAR Assist", "ASAR Assist тексеруі"],
+  your_app: ["Your application", "Ваш отклик", "Сіздің өтініміңіз"],
+  applicants: ["Applicants", "Отклики", "Үміткерлер"],
+  app_counts: ["{p} pending · {a}/{n} accepted", "{p} ожидают · {a}/{n} принято", "{p} күтуде · {a}/{n} қабылданды"],
+  switch_hint: ["Switch to requester mode to accept or decline applicants.", "Переключитесь в режим заказчика, чтобы принять или отклонить отклики.", "Үміткерлерді қабылдау не бас тарту үшін сұраушы режиміне ауысыңыз."],
+  waiting: ["Waiting for volunteers", "Ждём волонтёров", "Еріктілерді күтуде"],
+  waiting_b: ["Neighbours usually respond within the hour. Try applying yourself in volunteer mode to test the flow.", "Соседи обычно откликаются в течение часа. Попробуйте откликнуться сами в режиме волонтёра, чтобы проверить сценарий.", "Көршілер әдетте бір сағат ішінде жауап береді. Процесті тексеру үшін ерікті режимінде өзіңіз өтінім беріп көріңіз."],
+  reviews: ["Reviews", "Отзывы", "Пікірлер"],
+  about_v: ["about {n}", "о волонтёре {n}", "{n} туралы"],
+  decline: ["Decline", "Отклонить", "Бас тарту"],
+  accept: ["Accept", "Принять", "Қабылдау"],
+  team_full: ["Team full", "Команда собрана", "Команда толық"],
+  done_thanks: ["Completed. Thank you!", "Завершено. Спасибо!", "Аяқталды. Рақмет!"],
+  mark_done: ["Mark as completed", "Отметить выполненным", "Аяқталды деп белгілеу"],
+  accept_first: ["Accept a volunteer to continue", "Примите волонтёра, чтобы продолжить", "Жалғастыру үшін еріктіні қабылдаңыз"],
+  to_volunteer: ["Switch to volunteer mode to apply", "Переключитесь в режим волонтёра", "Өтінім беру үшін ерікті режиміне ауысыңыз"],
+  withdraw: ["Withdraw application", "Отозвать отклик", "Өтінімді қайтару"],
+  to_requester: ["Switch to requester to complete", "Переключитесь в режим заказчика", "Аяқтау үшін сұраушы режиміне ауысыңыз"],
+  on_team: ["You're on the team", "Вы в команде", "Сіз командадасыз"],
+  not_selected: ["Not selected this time", "В этот раз не выбраны", "Бұл жолы таңдалмадыңыз"],
+  team_complete: ["Team is complete", "Команда уже собрана", "Команда жиналды"],
+  apply_help: ["Apply to help", "Откликнуться", "Көмектесуге өтінім беру"],
+
+  // sheets
+  offer: ["Offer your help", "Предложите помощь", "Көмегіңізді ұсыныңыз"],
+  msg_to: ["Message to {n}", "Сообщение для {n}", "{n} үшін хабарлама"],
+  msg_help: ["A short, friendly note helps the requester choose.", "Короткое дружелюбное сообщение поможет с выбором.", "Қысқа әрі жылы хабарлама таңдауға көмектеседі."],
+  own_apply: ["Demo: you're applying to your own request so you can test both sides of ASAR.", "Демо: вы откликаетесь на свой запрос, чтобы проверить обе стороны ASAR.", "Демо: ASAR-дың екі жағын тексеру үшін өз өтінішіңізге өтінім бересіз."],
+  send_app: ["Send application", "Отправить отклик", "Өтінімді жіберу"],
+  default_note: ["Sälem! I'm nearby and free at that time. Happy to help.", "Здравствуйте! Я живу рядом и свободен в это время. С радостью помогу.", "Сәлеметсіз бе! Жақын тұрамын, сол уақытта бос боламын. Көмектесуге қуаныштымын."],
+  glad: ["I'd be glad to help!", "С радостью помогу!", "Көмектесуге қуаныштымын!"],
+  how_go: ["How did it go?", "Как всё прошло?", "Қалай өтті?"],
+  how_go_b: ["Rate your volunteers. Each review is checked by a simulated plausibility analyzer before it's published.", "Оцените волонтёров. Перед публикацией каждый отзыв проверяет симулированный анализатор правдоподобия.", "Еріктілеріңізді бағалаңыз. Әр пікір жарияланбас бұрын симуляцияланған шынайылық анализаторымен тексеріледі."],
+  rating_for: ["Rating for {n}", "Оценка для {n}", "{n} үшін баға"],
+  review_for: ["Review for {n}", "Отзыв о {n}", "{n} туралы пікір"],
+  n_stars: ["{n} stars", "{n} из 5", "{n} жұлдыз"],
+  stars_of: ["{n} out of 5 stars", "{n} из 5 звёзд", "5 жұлдыздың {n}"],
+  try_claim: ["Try an unusual claim", "Попробовать странное заявление", "Ерекше мәлімдемені байқау"],
+  live_check: ["Live check", "Проверка на лету", "Тікелей тексеру"],
+  complete_publish: ["Complete and publish reviews", "Завершить и опубликовать отзывы", "Аяқтап, пікірлерді жариялау"],
+  default_review: ["Arrived on time, kind and very helpful. Rahmet!", "Пришёл вовремя, добрый и очень помог. Рахмет!", "Уақытында келді, мейірімді әрі көп көмектесті. Рақмет!"],
+
+  // verification
+  lv_ok: ["Looks consistent", "Выглядит правдоподобно", "Сенімді көрінеді"],
+  lv_light: ["Light review suggested", "Рекомендуется беглая проверка", "Қысқаша тексеру ұсынылады"],
+  lv_needs: ["Needs additional verification", "Нужна дополнительная проверка", "Қосымша тексеру қажет"],
+  plaus: ["Plausibility {n}%", "Правдоподобие {n}%", "Шынайылық {n}%"],
+  verify_note: ["Sent for additional verification by a moderator. This is not an accusation of fraud.", "Отправлено модератору на дополнительную проверку. Это не обвинение в мошенничестве.", "Модераторға қосымша тексеруге жіберілді. Бұл алаяқтық деп айыптау емес."],
+  f_heavy: ["Physically unusual claim", "Физически необычное заявление", "Физикалық тұрғыдан ерекше мәлімдеме"],
+  f_heavy_b: ["One person moving ~{kg} kg unaided is far above typical safe limits (~80 kg). It may be a typo, exaggeration or missing context.", "Один человек, переносящий ~{kg} кг без помощи, — это намного выше безопасного предела (~80 кг). Возможно, опечатка, преувеличение или не хватает контекста.", "Бір адамның ~{kg} кг жүкті көмексіз көтеруі қауіпсіз шектен (~80 кг) әлдеқайда жоғары. Бұл қате, асыра айту немесе контекстің жетіспеуі болуы мүмкін."],
+  f_weight: ["Large weight mentioned", "Упомянут большой вес", "Үлкен салмақ аталды"],
+  f_weight_b: ["Confirm how many people shared the load.", "Уточните, сколько человек несли груз.", "Жүкті қанша адам бөліскенін нақтылаңыз."],
+  f_dur: ["Unusual duration", "Необычная длительность", "Ерекше ұзақтық"],
+  f_dur_b: ["{h} hours of continuous volunteering in one task is uncommon.", "{h} часов непрерывного волонтёрства в одной задаче — редкость.", "Бір тапсырмада {h} сағат үздіксіз еріктілік — сирек жағдай."],
+  f_scale: ["Large impact by one person", "Большой результат одного человека", "Бір адамның ауқымды нәтижесі"],
+  f_scale_b: ["Helping {n} people single-handedly would normally need a team.", "Чтобы в одиночку помочь {n} людям, обычно нужна команда.", "{n} адамға жалғыз көмектесу үшін әдетте команда керек."],
+  f_promo: ["Very promotional tone", "Слишком рекламный тон", "Тым мақтаулы тон"],
+  f_promo_b: ["Several superlatives in one short review. Usually fine, just worth a glance.", "Несколько превосходных степеней в коротком отзыве. Обычно это нормально, но стоит взглянуть.", "Қысқа пікірде бірнеше асыра мақтау бар. Әдетте қалыпты, бірақ қарап шыққан жөн."],
+  f_mis: ["Rating and text disagree", "Оценка не совпадает с текстом", "Баға мен мәтін сәйкес емес"],
+  f_mis_hi: ["5 stars, but the text sounds negative.", "5 звёзд, но текст звучит негативно.", "5 жұлдыз, бірақ мәтін жағымсыз естіледі."],
+  f_mis_lo: ["Low rating, but the text is very positive.", "Низкая оценка, но текст очень положительный.", "Баға төмен, бірақ мәтін өте жағымды."],
+  f_short: ["Very short review", "Слишком короткий отзыв", "Тым қысқа пікір"],
+  f_short_b: ["Short reviews carry less evidence.", "В коротких отзывах меньше подтверждений.", "Қысқа пікірлерде дәлел аз."],
+
+  // analyzer
+  sim_ai: ["Simulated AI", "Симуляция ИИ", "Симуляцияланған ЖИ"],
+  demo_data: ["Demo data", "Демо-данные", "Демо деректер"],
+  category: ["Category", "Категория", "Санат"],
+  difficulty: ["Difficulty", "Сложность", "Күрделілігі"],
+  team: ["Team", "Команда", "Команда"],
+  people: [(v) => `${v.n} ${v.n === 1 ? "person" : "people"}`, (v) => `${v.n} ${ruP(v.n, "человек", "человека", "человек")}`, (v) => `${v.n} адам`],
+  sugg_skills: ["Suggested skills", "Рекомендуемые навыки", "Ұсынылған дағдылар"],
+  s_match: ["Matched “{w}” → {c}", "Совпадения: «{w}» → {c}", "Сәйкестік: «{w}» → {c}"],
+  s_none: ["No strong keywords yet. Add more details for a better match.", "Пока нет явных ключевых слов. Добавьте подробностей.", "Әзірге айқын кілт сөздер жоқ. Дәлірек болу үшін толығырақ жазыңыз."],
+  s_heavy: ["Physical effort detected (“{w}”)", "Нужна физическая сила («{w}»)", "Физикалық күш қажет («{w}»)"],
+  s_long: ["Long duration mentioned", "Упомянута долгая продолжительность", "Ұзақ уақыт аталды"],
+  s_care: ["Sensitive care context; experience helps", "Деликатный уход — опыт пригодится", "Нәзік күтім жағдайы; тәжірибе пайдалы"],
+  s_count: ["Team size taken from your text", "Размер команды взят из вашего текста", "Команда көлемі мәтініңізден алынды"],
+  confidence: ["Confidence {n}% · keyword rules in your browser, not a real AI model", "Уверенность {n}% · правила по ключевым словам в браузере, не настоящая модель ИИ", "Сенімділік {n}% · браузердегі кілт сөз ережелері, нақты ЖИ моделі емес"],
+
+  // my tasks
+  my_tasks: ["My tasks", "Мои задачи", "Менің тапсырмаларым"],
+  my_tasks_b: ["Track your requests and the help you've offered.", "Следите за своими запросами и откликами.", "Өтініштеріңіз бен ұсынған көмегіңізді бақылаңыз."],
+  to_review: ["to review", "на рассмотрении", "қарауға"],
+  active_reqs: ["active requests", "активных запросов", "белсенді өтініш"],
+  upcoming: ["upcoming helps", "предстоящих дел", "алдағы көмек"],
+  my_requests: ["My requests", "Мои запросы", "Өтініштерім"],
+  applications: ["Applications", "Мои отклики", "Өтінімдерім"],
+  new_apps: [(v) => `${v.n} new applicant${v.n > 1 ? "s" : ""}`, (v) => `Новых откликов: ${v.n}`, (v) => `${v.n} жаңа үміткер`],
+  no_new_apps: ["No new applicants", "Новых откликов нет", "Жаңа үміткер жоқ"],
+  switch_review: ["Switch to requester mode to review", "Переключитесь в режим заказчика", "Қарау үшін сұраушы режиміне ауысыңыз"],
+  open_complete: ["Open to mark completed", "Открыть и завершить", "Аяқтау үшін ашу"],
+  no_reqs: ["No requests yet", "Запросов пока нет", "Әзірге өтініш жоқ"],
+  no_reqs_b: ["Post what you need and neighbours nearby will offer to help.", "Опишите, что нужно, и соседи рядом предложат помощь.", "Не керек екенін жазыңыз — жақын маңдағы көршілер көмек ұсынады."],
+  no_apps: ["You haven't applied yet", "Вы ещё не откликались", "Сіз әлі өтінім бермедіңіз"],
+  no_apps_b: ["Browse nearby requests and offer a hand. It takes a minute.", "Посмотрите запросы рядом и предложите помощь. Это займёт минуту.", "Жақын маңдағы өтініштерді қарап, көмек ұсыныңыз. Бір минут қана кетеді."],
+  browse: ["Browse requests", "Смотреть запросы", "Өтініштерді қарау"],
+  tl_applied: ["Applied", "Отклик", "Өтінім"],
+  tl_reviewed: ["Reviewed", "Рассмотрен", "Қаралды"],
+  tl_confirmed: ["Confirmed", "Подтверждён", "Расталды"],
+  tl_declined: ["Declined", "Отклонён", "Қабылданбады"],
+  tl_completed: ["Completed", "Завершён", "Аяқталды"],
+
+  // create
+  new_request: ["New request", "Новый запрос", "Жаңа өтініш"],
+  new_request_b: ["Describe what you need. ASAR Assist suggests the category, team size and skills.", "Опишите, что нужно. ASAR Assist подскажет категорию, размер команды и навыки.", "Не керек екенін сипаттаңыз. ASAR Assist санатты, команда көлемін және дағдыларды ұсынады."],
+  quick_start: ["Quick start", "Быстрый старт", "Жылдам бастау"],
+  title: ["Title", "Заголовок", "Тақырып"],
+  title_ph: ["e.g. Help carry groceries to the 5th floor", "например, донести продукты на 5 этаж", "мысалы, азық-түлікті 5-қабатқа көтеру"],
+  title_err: ["Add a short title (4+ characters)", "Добавьте короткий заголовок (от 4 символов)", "Қысқа тақырып қосыңыз (4+ таңба)"],
+  description: ["Description", "Описание", "Сипаттама"],
+  desc_ph: ["What needs to be done, any access details, what to bring…", "Что нужно сделать, как пройти, что взять с собой…", "Не істеу керек, қалай кіруге болады, не алып келу керек…"],
+  desc_err: ["A few more details help volunteers decide", "Чуть больше деталей поможет волонтёрам решить", "Толығырақ жазсаңыз, еріктілерге шешім қабылдау оңай"],
+  cat_err: ["Choose a category", "Выберите категорию", "Санатты таңдаңыз"],
+  area_in: ["Area in Almaty", "Район Алматы", "Алматыдағы аудан"],
+  date_time: ["Date and time", "Дата и время", "Күні мен уақыты"],
+  vols_needed: ["Volunteers needed", "Сколько нужно волонтёров", "Қажетті еріктілер саны"],
+  vol_word: [(v) => (v.n === 1 ? "volunteer" : "volunteers"), (v) => ruP(v.n, "волонтёр", "волонтёра", "волонтёров"), () => "ерікті"],
+  fewer: ["Fewer volunteers", "Меньше волонтёров", "Азырақ ерікті"],
+  more: ["More volunteers", "Больше волонтёров", "Көбірек ерікті"],
+  publish: ["Publish request", "Опубликовать запрос", "Өтінішті жариялау"],
+  ai_ph: ["Start describing your request and suggestions for category, difficulty, team size and skills will appear here.", "Начните описывать запрос — здесь появятся подсказки по категории, сложности, размеру команды и навыкам.", "Өтінішіңізді сипаттай бастаңыз — санат, күрделілік, команда көлемі мен дағдылар бойынша ұсыныстар осында шығады."],
+  use_sugg: ["Use suggestions", "Применить подсказки", "Ұсыныстарды қолдану"],
+  sugg_applied: ["Suggestions applied", "Подсказки применены", "Ұсыныстар қолданылды"],
+  fill_fields: ["Please complete the highlighted fields", "Заполните отмеченные поля", "Белгіленген өрістерді толтырыңыз"],
+
+  // profile
+  member_since: ["Member since {y}", "С нами с {y}", "{y} жылдан бері мүше"],
+  demo_account: ["Demo account", "Демо-аккаунт", "Демо аккаунт"],
+  local_account: ["Local account", "Локальный аккаунт", "Жергілікті аккаунт"],
+  impact: ["Your impact", "Ваш вклад", "Сіздің үлесіңіз"],
+  n_reviews: [(v) => `${v.n} ${v.n === 1 ? "review" : "reviews"}`, (v) => `${v.n} ${ruP(v.n, "отзыв", "отзыва", "отзывов")}`, (v) => `${v.n} пікір`],
+  tasks_done: ["tasks done", "задач выполнено", "тапсырма орындалды"],
+  hours_given: ["hours given", "часов помощи", "сағат көмек"],
+  h_unit: ["{n}h", "{n} ч", "{n} сағ"],
+  achievements: ["Verified achievements", "Подтверждённые достижения", "Расталған жетістіктер"],
+  achievements_b: ["Confirmed by the people you helped (demo)", "Подтверждено теми, кому вы помогли (демо)", "Сіз көмектескен адамдар растаған (демо)"],
+  by: ["by {n}", "подтвердил: {n}", "растаған: {n}"],
+  lab: ["ASAR Assist lab", "Лаборатория ASAR Assist", "ASAR Assist зертханасы"],
+  lab_b: ["Try the task analyzer and review verification", "Попробуйте анализатор задач и проверку отзывов", "Тапсырма анализаторы мен пікір тексеруін байқап көріңіз"],
+  reviews_about: ["Reviews about you", "Отзывы о вас", "Сіз туралы пікірлер"],
+  n_published: ["{n} published", "Опубликовано: {n}", "{n} жарияланды"],
+  history: ["Participation history", "История участия", "Қатысу тарихы"],
+  history_b: ["Your recent helping hands", "Ваши недавние добрые дела", "Соңғы көмектеріңіз"],
+  footnote: ["All ratings, counts and achievements on this page are demo data kept in memory in this browser tab. ASAR is a hackathon prototype.", "Все оценки, цифры и достижения на этой странице — демо-данные в памяти этой вкладки. ASAR — прототип для хакатона.", "Бұл беттегі барлық бағалар, сандар мен жетістіктер — осы браузер қойындысындағы демо деректер. ASAR — хакатон прототипі."],
+  sign_out: ["Sign out", "Выйти", "Шығу"],
+  asar_demo: ["ASAR demo", "Демо ASAR", "ASAR демо"],
+
+  // lab
+  lab_note_t: ["Simulated AI demonstration.", "Демонстрация симуляции ИИ.", "Симуляцияланған ЖИ демонстрациясы."],
+  lab_note_b: ["These features use transparent, rule-based logic that runs in your browser. They are not connected to any real AI model or online service. They show how ASAR could assist people in a production version.", "Эти функции работают на прозрачных правилах прямо в браузере. Они не подключены ни к настоящей модели ИИ, ни к онлайн-сервисам. Это показывает, как ASAR мог бы помогать людям в полной версии.", "Бұл мүмкіндіктер браузеріңізде жұмыс істейтін ашық ережелерге негізделген. Олар нақты ЖИ моделіне немесе онлайн қызметке қосылмаған. Олар ASAR толық нұсқада адамдарға қалай көмектесе алатынын көрсетеді."],
+  analyzer: ["Task analyzer", "Анализатор задач", "Тапсырма анализаторы"],
+  analyzer_b: ["Suggests a category, difficulty, team size and skills from keywords.", "Подсказывает категорию, сложность, размер команды и навыки по ключевым словам.", "Кілт сөздер бойынша санатты, күрделілікті, команда көлемін және дағдыларды ұсынады."],
+  verification: ["Review verification", "Проверка отзывов", "Пікірлерді тексеру"],
+  verification_b: ["Flags physically unusual or inconsistent claims for a person to double-check. It never labels anyone a fraud.", "Отмечает физически необычные или противоречивые заявления для проверки человеком. Никого не называет мошенником.", "Физикалық тұрғыдан ерекше немесе қайшы мәлімдемелерді адам тексеруі үшін белгілейді. Ешкімді алаяқ деп атамайды."],
+  task_desc: ["Task description", "Описание задачи", "Тапсырма сипаттамасы"],
+  review_text: ["Review text", "Текст отзыва", "Пікір мәтіні"],
+  rating: ["Rating", "Оценка", "Баға"],
+  result: ["Result", "Результат", "Нәтиже"],
+  analysis: ["Analysis", "Анализ", "Талдау"],
+
+  // two-step sign-in & live database
+  check_email: ["Check your email", "Проверьте почту", "Поштаңызды тексеріңіз"],
+  code_sent_signup: ["We sent a 6-digit code to {e}. Enter it to confirm your account.", "Мы отправили 6-значный код на {e}. Введите его, чтобы подтвердить аккаунт.", "{e} поштасына 6 таңбалы код жібердік. Аккаунтты растау үшін соны енгізіңіз."],
+  code_sent_login: ["Password accepted. We sent a 6-digit code to {e}. Enter it to finish signing in.", "Пароль принят. Мы отправили 6-значный код на {e}. Введите его, чтобы завершить вход.", "Құпиясөз қабылданды. {e} поштасына 6 таңбалы код жібердік. Кіруді аяқтау үшін соны енгізіңіз."],
+  code_label: ["Email code", "Код из письма", "Хаттағы код"],
+  verify: ["Verify", "Подтвердить", "Растау"],
+  resend: ["Send a new code", "Отправить код ещё раз", "Кодты қайта жіберу"],
+  resend_in: ["New code available in {n} s", "Новый код можно запросить через {n} с", "Жаңа кодты {n} с кейін сұрауға болады"],
+  code_resent: ["New code sent", "Новый код отправлен", "Жаңа код жіберілді"],
+  other_email: ["Use a different email", "Указать другую почту", "Басқа поштаны қолдану"],
+  spam_hint: ["Can't find the email? Check your spam folder.", "Не нашли письмо? Проверьте папку «Спам».", "Хат келмеді ме? «Спам» қалтасын тексеріңіз."],
+  step_pw: ["Password", "Пароль", "Құпиясөз"],
+  step_code: ["Email code", "Код из письма", "Поштадағы код"],
+  e_code: ["That code is wrong or has expired. Check the latest email or send a new code.", "Код неверный или устарел. Проверьте последнее письмо или запросите новый код.", "Код қате немесе мерзімі өтті. Соңғы хатты тексеріңіз немесе жаңа код сұраңыз."],
+  e_rate: ["Too many attempts. Wait a minute and try again.", "Слишком много попыток. Подождите минуту и попробуйте снова.", "Тым көп әрекет. Бір минут күтіп, қайталап көріңіз."],
+  e_unconfirmed: ["This email isn't confirmed yet. We've sent you a new code.", "Эта почта ещё не подтверждена. Мы отправили новый код.", "Бұл пошта әлі расталмаған. Сізге жаңа код жібердік."],
+  e_network: ["Couldn't reach the server. Check your connection and try again.", "Не удалось связаться с сервером. Проверьте подключение и попробуйте снова.", "Серверге қосылу мүмкін болмады. Байланысты тексеріп, қайталап көріңіз."],
+  e_generic: ["Something went wrong: {m}", "Что-то пошло не так: {m}", "Бірдеңе дұрыс болмады: {m}"],
+  demo_code: ["Demo mode: no email is sent. Your code is {c}.", "Демо-режим: письмо не отправляется. Ваш код: {c}.", "Демо режим: хат жіберілмейді. Сіздің кодыңыз: {c}."],
+  live_auth_note: ["Two-step sign-in: your password plus a 6-digit code sent to your email.", "Двухэтапный вход: пароль и 6-значный код из письма.", "Екі қадамды кіру: құпиясөз және поштаға келетін 6 таңбалы код."],
+  w_fine_live: ["Sign-in is protected by a password and an emailed code.", "Вход защищён паролем и кодом из письма.", "Кіру құпиясөз бен поштадағы кодпен қорғалған."],
+  new_member: ["New member", "Новый участник", "Жаңа мүше"],
+  imp_l1: ["open requests", "открытых запросов", "ашық өтініш"],
+  imp_l2: ["neighbours volunteering", "соседей откликнулись", "көрші көмек ұсынды"],
+  imp_l3: ["tasks completed", "задач выполнено", "тапсырма орындалды"],
+  imp_cap_live: ["Live from the ASAR database", "Данные из базы ASAR", "ASAR дерекқорынан"],
+  email_verified: ["Email verified", "Почта подтверждена", "Пошта расталған"],
+  footnote_live: ["Your requests, applications and reviews are stored in the ASAR database. Ratings and achievements are calculated from them.", "Ваши запросы, отклики и отзывы хранятся в базе ASAR. Оценки и достижения рассчитываются по ним.", "Өтініштеріңіз, өтінімдеріңіз бен пікірлеріңіз ASAR дерекқорында сақталады. Бағалар мен жетістіктер солардан есептеледі."],
+  loading: ["Loading…", "Загрузка…", "Жүктелуде…"],
+  save_err: ["Couldn't save: {m}", "Не удалось сохранить: {m}", "Сақтау мүмкін болмады: {m}"],
+
+  // toasts
+  toast_vol: ["Volunteer mode: find someone to help", "Режим волонтёра: найдите, кому помочь", "Ерікті режимі: көмек керек адамды табыңыз"],
+  toast_req: ["Requester mode: manage your requests", "Режим заказчика: управляйте запросами", "Сұраушы режимі: өтініштеріңізді басқарыңыз"],
+  toast_sent: ["Application sent to {n}", "Отклик отправлен: {n}", "Өтінім жіберілді: {n}"],
+  toast_withdrawn: ["Application withdrawn", "Отклик отозван", "Өтінім қайтарылды"],
+  toast_team: ["{n} is on your team", "{n} в вашей команде", "{n} командаңызда"],
+  toast_declined: ["Application declined politely", "Отклик вежливо отклонён", "Өтінім сыпайы түрде қабылданбады"],
+  toast_done: ["Task completed. Thank you for keeping asar alive", "Задача завершена. Спасибо, что храните традицию асар", "Тапсырма аяқталды. Асар дәстүрін жалғастырғаныңызға рақмет"],
+  toast_pub: ["Request published. It's live on Home", "Запрос опубликован. Он уже на главной", "Өтініш жарияланды. Ол басты бетте"],
+  toast_lang: ["Language: English", "Язык: русский", "Тіл: қазақша"],
+};
+function t(k, v = {}) {
+  const e = D[k]; if (!e) return k;
+  const s = e[LI[lang]] ?? e[0];
+  return typeof s === "function" ? s(v) : s.replace(/\{(\w+)\}/g, (_, x) => (v[x] ?? ""));
+}
+
+/* ================= icons ================= */
+const P = {
+  home: '<path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/>',
+  tasks: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M9 11h6M9 15h4"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  group: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 2.9-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2.3.6 3.5 2.4 3.5 5.2"/>',
+  bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  star: '<path fill="currentColor" stroke="none" d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"/>',
+  verified: '<path fill="currentColor" stroke="none" d="M12 1.8l2.6 1.9 3.2-.1 1 3 2.6 1.9-1 3 1 3-2.6 1.9-1 3-3.2-.1L12 22.2l-2.6-1.9-3.2.1-1-3-2.6-1.9 1-3-1-3 2.6-1.9 1-3 3.2.1z"/><path stroke="var(--surface)" stroke-width="2" d="M8.2 12.2l2.6 2.6 5-5"/>',
+  sparkle: '<path fill="currentColor" stroke="none" d="M10 3l1.9 5.1L17 10l-5.1 1.9L10 17l-1.9-5.1L3 10l5.1-1.9zM18 14l.9 2.1 2.1.9-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/>',
+  flag: '<path d="M5 21V4h11l-2 4 2 4H5"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>',
+  send: '<path d="M4 12l16-8-6 16-3-6z"/><path d="M11 14l9-10"/>',
+  logout: '<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.2"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  key: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  eyeoff: '<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  elderly: '<circle cx="10.5" cy="4.5" r="2"/><path d="M10.5 8l-2 6 2.5 3v4.5M10.5 8l3 4h3.5M8.5 14l-2 7M17 12v9.5"/>',
+  box: '<path d="M3 7.5l9-4.5 9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/>',
+  leaf: '<path d="M5 19c0-8.5 5.5-14 15-14 0 9.5-5.5 15-14 15"/><path d="M5 19.5l8-8"/>',
+  school: '<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3.3 2.5 8.7 2.5 12 0v-5M22 9v6"/>',
+  food: '<path d="M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3M17 21V3c-2.5 1.5-3.5 4.5-3.5 8.5H17"/>',
+  paw: '<circle cx="6.5" cy="10" r="1.8"/><circle cx="10" cy="5.8" r="1.8"/><circle cx="14.5" cy="5.8" r="1.8"/><circle cx="18" cy="10" r="1.8"/><path d="M7.8 17.2c0-3.2 2.4-5.4 4.4-5.4s4.4 2.2 4.4 5.4c0 2.2-2 3-4.4 2.3-2.4.7-4.4-.1-4.4-2.3z"/>',
+  party: '<path d="M4 20l4.6-12.5 8 8z"/><path d="M14 3.5v2.5M19.5 5L18 6.5M20.5 10H18M11 8.5c1-2 1-3.5 0-5"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+  megaphone: '<path d="M3 10v4h4l9 5V5L7 10z"/><path d="M19 9.5a3.5 3.5 0 0 1 0 5M7 14l1.5 6h3L10 15"/>',
+  hand: '<path d="M12 9c-1.3-2.4-5-2-5 .7 0 2.3 5 5.3 5 5.3s5-3 5-5.3C17 7 13.3 6.6 12 9z"/><path d="M2 19.5l3-3h4.5l4 1 6-3.5"/>',
+  heart: '<path fill="currentColor" stroke="none" d="M12 20.5S3.5 15 3.5 9.2A4.6 4.6 0 0 1 12 6.6a4.6 4.6 0 0 1 8.5 2.6C20.5 15 12 20.5 12 20.5z"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4.5M16 6h3a3 3 0 0 1-3 4.5M12 13v4M8.5 21h7M10 17h4v4h-4z"/>',
+  medal: '<circle cx="12" cy="15" r="5.5"/><path d="M8.5 10.5L6 3h4l2 4 2-4h4l-2.5 7.5"/><path d="M12 12.8v4.4"/>',
+  hourglass: '<path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9"/>',
+  inbox: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>',
+  task: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+  publish: '<path d="M5 4h14M12 20V9M7 13l5-5 5 5"/>',
+  minus: '<path d="M5 12h14"/>',
+};
+const icon = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ""}</svg>`;
+const logoMark = (s = 38) => `<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="12" fill="var(--primary)"/><path d="M12 29.6 20 12l8 17.6M14.8 24q5.2-4 10.4 0" fill="none" stroke="var(--on-primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="6.4" r="2.2" fill="#E9C46A"/></svg>`;
+
+/* ================= helpers ================= */
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $ = (s) => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const DAY = 86400000, HOUR = 3600000;
+const at = (days, h, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); d.setDate(d.getDate() + days); return d; };
+const ago = (ts) => { const m = Math.max(0, Math.round((Date.now() - ts) / 60000)); return m < 1 ? t("just_now") : m < 60 ? t("m_ago", { n: m }) : m < 1440 ? t("h_ago", { n: Math.floor(m / 60) }) : t("d_ago", { n: Math.floor(m / 1440) }); };
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const dayLabel = (d) => { if (sameDay(d, new Date())) return t("today"); if (sameDay(d, new Date(Date.now() + DAY))) return t("tomorrow"); if (sameDay(d, new Date(Date.now() - DAY))) return t("yesterday"); return d.toLocaleDateString(locale(), { weekday: "short", day: "numeric", month: "short" }); };
+const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+const friendly = (d) => `${dayLabel(d)} · ${hhmm(d)}`;
+const km = (x) => (x < 1 ? `${Math.round(x * 1000)} ${lang === "en" ? "m" : "м"}` : `${x.toFixed(1).replace(".", lang === "en" ? "." : ",")} ${lang === "en" ? "km" : "км"}`);
+const dur = (d) => t("hours", d);
+const initials = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+const hash = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
+const first = (n) => n.split(" ")[0];
+
+/* ================= backend =================
+   With config.js filled in (Supabase URL + public anon key) the site uses the real
+   database and emailed sign-in codes. Without it, everything runs in demo mode. */
+const CFG = window.ASAR_CONFIG || {};
+const LIVE = !!(CFG.supabaseUrl && CFG.supabaseAnonKey);
+let sb = null;
+function loadSupabase() {
+  return new Promise((res, rej) => {
+    if (window.supabase?.createClient) return res();
+    const el = document.createElement("script");
+    el.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
+    el.onload = () => res(); el.onerror = () => rej(new Error("network"));
+    document.head.appendChild(el);
+  });
+}
+/** Claims inside a Supabase access token (only `amr` is read). */
+const jwtClaims = (token) => { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); } catch (e) { return {}; } };
+const isCodeSession = (session) => (jwtClaims(session?.access_token).amr || []).some((m) => ["otp", "magiclink", "email/signup"].includes(m.method));
+/** Map a Supabase/network error to a translation key (+ raw message for the generic case). */
+function errKey(err) {
+  const m = String(err?.message || err || "");
+  if (/invalid login credentials/i.test(m)) return ["e_wrong"];
+  if (/already registered|already exists/i.test(m)) return ["e_exists"];
+  if (/not confirmed/i.test(m)) return ["e_unconfirmed"];
+  if (/expired|invalid.*(otp|token)|token.*invalid/i.test(m)) return ["e_code"];
+  if (err?.status === 429 || /rate limit|security purposes|too many/i.test(m)) return ["e_rate"];
+  if (/fetch|network|failed to load/i.test(m)) return ["e_network"];
+  if (/password/i.test(m) && /6|characters|short/i.test(m)) return ["e_pass"];
+  return ["e_generic", m];
+}
+const errText = (err) => { const [k, m] = errKey(err); return t(k, { m }); };
+
+/* ================= domain ================= */
+const CATS = {
+  elderly: { label: ["Elderly care", "Помощь пожилым", "Қарттарға көмек"], short: ["Elderly", "Пожилые", "Қарттар"], icon: "elderly" },
+  moving: { label: ["Moving & lifting", "Переезд и грузы", "Көшу және жүк"], short: ["Moving", "Переезд", "Көшу"], icon: "box" },
+  eco: { label: ["Eco & cleanup", "Экология и уборка", "Эко және тазалық"], short: ["Eco", "Эко", "Эко"], icon: "leaf" },
+  education: { label: ["Education", "Образование", "Білім"], short: ["Education", "Учёба", "Білім"], icon: "school" },
+  food: { label: ["Food aid", "Продуктовая помощь", "Азық-түлік көмегі"], short: ["Food", "Еда", "Азық"], icon: "food" },
+  animals: { label: ["Animal care", "Помощь животным", "Жануарларға күтім"], short: ["Animals", "Животные", "Жануарлар"], icon: "paw" },
+  events: { label: ["Community events", "Мероприятия", "Қоғамдық іс-шаралар"], short: ["Events", "События", "Іс-шаралар"], icon: "party" },
+  tech: { label: ["Digital help", "Цифровая помощь", "Цифрлық көмек"], short: ["Digital", "Цифра", "Цифрлық"], icon: "phone" },
+};
+const catLabel = (c) => L(CATS[c].label), catShort = (c) => L(CATS[c].short);
+const AREAS = {
+  almaly: [["Almaly district", "Алмалинский район", "Алмалы ауданы"], ["Almaly", "Алмалинский", "Алмалы"]],
+  bostandyk: [["Bostandyk district", "Бостандыкский район", "Бостандық ауданы"], ["Bostandyk", "Бостандыкский", "Бостандық"]],
+  medeu: [["Medeu district", "Медеуский район", "Медеу ауданы"], ["Medeu", "Медеуский", "Медеу"]],
+  auezov: [["Auezov district", "Ауэзовский район", "Әуезов ауданы"], ["Auezov", "Ауэзовский", "Әуезов"]],
+  zhetysu: [["Zhetysu district", "Жетысуский район", "Жетісу ауданы"], ["Zhetysu", "Жетысуский", "Жетісу"]],
+  turksib: [["Turksib district", "Турксибский район", "Түрксіб ауданы"], ["Turksib", "Турксибский", "Түрксіб"]],
+  nauryzbay: [["Nauryzbay district", "Наурызбайский район", "Наурызбай ауданы"], ["Nauryzbay", "Наурызбайский", "Наурызбай"]],
+  alatau: [["Alatau district", "Алатауский район", "Алатау ауданы"], ["Alatau", "Алатауский", "Алатау"]],
+};
+const areaName = (k, short = false) => L(AREAS[k][short ? 1 : 0]);
+const SKILLS = {
+  patience: ["Patience", "Терпение", "Сабыр"], kindness: ["Kindness", "Доброта", "Мейірімділік"],
+  teamwork: ["Teamwork", "Работа в команде", "Командалық жұмыс"], fitness: ["Physical fitness", "Физическая форма", "Физикалық дайындық"],
+  waste: ["Waste sorting", "Сортировка отходов", "Қалдықтарды сұрыптау"], teaching: ["Teaching", "Преподавание", "Оқыту"],
+  explain: ["Clear explanations", "Понятные объяснения", "Түсінікті түсіндіру"], org: ["Organisation", "Организованность", "Ұйымдастыру"],
+  hygiene: ["Food hygiene", "Пищевая гигиена", "Тамақ гигиенасы"], animals: ["Love for animals", "Любовь к животным", "Жануарларды жақсы көру"],
+  calm: ["Calm attitude", "Спокойствие", "Сабырлылық"], setup: ["Event setup", "Подготовка мероприятий", "Іс-шара дайындау"],
+  comm: ["Communication", "Общение", "Қарым-қатынас"], phones: ["Smartphones", "Смартфоны", "Смартфондар"],
+  heavy: ["Heavy lifting", "Переноска тяжестей", "Ауыр жүк көтеру"], driving: ["Driving licence", "Водительские права", "Жүргізуші куәлігі"],
+  english: ["English", "Английский язык", "Ағылшын тілі"], kazakh: ["Kazakh language", "Казахский язык", "Қазақ тілі"],
+  kids: ["Childcare experience", "Опыт с детьми", "Балалармен жұмыс тәжірибесі"], firstaid: ["First aid basics", "Основы первой помощи", "Алғашқы көмек негіздері"],
+  reliability: ["Reliability", "Надёжность", "Сенімділік"], cleaning: ["Basic cleaning", "Уборка", "Үй тазалау"],
+  light: ["Light lifting", "Лёгкие тяжести", "Жеңіл жүк көтеру"], math: ["Mathematics", "Математика", "Математика"],
+  ruKz: ["Kazakh or Russian", "Казахский или русский", "Қазақ немесе орыс тілі"], creativity: ["Creativity", "Креативность", "Шығармашылық"],
+  gardening: ["Gardening", "Садоводство", "Бағбандық"],
+};
+const skill = (k) => L(SKILLS[k] || k);
+const DIFF = (d) => t("d_" + d);
+let ME = "me";
+const DEMO_EMAIL = "demo@asar.kz", DEMO_PASS = "asar2026";
+
+const person = (id, name, rating, done, verified, since) => ({ id, name, rating, done, verified, since });
+const P1 = person("p1", "Saule Nurlanovna", 4.9, 3, true, 2023), P2 = person("p2", "Dauren Akhmetov", 4.7, 5, true, 2024),
+  P3 = person("p3", "Aliya Seitkali", 4.8, 9, true, 2022), P4 = person("p4", "Gulnara Omarova", 5.0, 2, false, 2025),
+  P5 = person("p5", "Timur Zhaksylykov", 4.6, 4, true, 2024), ECO = person("p6", "Taza Almaty Initiative", 4.9, 41, true, 2021),
+  FOOD = person("p7", "Meirim Food Bank", 4.9, 63, true, 2021);
+const V1 = person("v1", "Dana Serikova", 4.9, 18, true, 2023), V2 = person("v2", "Arman Tulegenov", 4.7, 11, true, 2024),
+  V3 = person("v3", "Kamila Ospanova", 4.8, 6, false, 2025), V4 = person("v4", "Nurlan Bekov", 4.5, 3, false, 2025),
+  V5 = person("v5", "Madina Zhumabaeva", 5.0, 24, true, 2022);
+
+const app = (id, volunteer, msg, status, hoursAgo) => ({ id, v: volunteer, msg, status, at: Date.now() - hoursAgo * HOUR });
+
+function seed(me) {
+  const T = (o) => ({ apps: [], done: false, reviews: [], ...o });
+  return [
+    T({ id: "t-me-1",
+      title: ["Help my grandmother with spring cleaning", "Помочь бабушке с весенней уборкой", "Әжеме көктемгі тазалыққа көмек"],
+      desc: ["My grandmother (82) lives alone on the 4th floor in Almaly. We need two kind people to help wash windows, take old boxes down to the recycling point and rearrange a heavy wardrobe. Tea and baursaks guaranteed!", "Моей бабушке 82 года, она живёт одна на 4 этаже в Алмалинском районе. Нужны два добрых человека: помыть окна, отнести старые коробки в пункт переработки и передвинуть тяжёлый шкаф. Чай и баурсаки гарантированы!", "Әжем 82 жаста, Алмалы ауданында 4-қабатта жалғыз тұрады. Терезе жуу, ескі қораптарды қайта өңдеу пунктіне апару және ауыр шкафты жылжыту үшін екі мейірімді адам керек. Шай мен бауырсақ бізден!"],
+      cat: "elderly", area: "almaly", dist: 1.2, date: at(2, 11), dur: { h: 3, ap: true }, need: 2, req: me, skills: ["patience", "cleaning", "light"], diff: "moderate", createdAt: Date.now() - 20 * HOUR,
+      apps: [
+        app("a-1", V1, ["Sälem! I live nearby and helped my own ateje with the same last month. Happy to come.", "Сәлем! Я живу рядом и в прошлом месяце помогала своей әже с тем же. С радостью приду.", "Сәлем! Жақын тұрамын, өткен айда өз әжеме дәл осылай көмектестім. Қуана келемін."], "pending", 3),
+        app("a-2", V2, ["I can carry the wardrobe and boxes. I have a free Saturday morning.", "Могу перенести шкаф и коробки. В субботу утром я свободен.", "Шкаф пен қораптарды көтере аламын. Сенбі күні таңертең бос боламын."], "pending", 1),
+      ] }),
+    T({ id: "t-1",
+      title: ["Weekly groceries for a veteran", "Еженедельные продукты для ветерана", "Ардагерге апта сайынғы азық-түлік"],
+      desc: ["Bring groceries from the supermarket on Abay Ave to an elderly veteran. The list is short and paid in advance, so you just pick up and deliver. He loves a short chat about chess.", "Принести продукты из супермаркета на проспекте Абая пожилому ветерану. Список короткий и оплачен заранее — нужно только забрать и доставить. Он любит поговорить о шахматах.", "Абай даңғылындағы супермаркеттен қарт ардагерге азық-түлік жеткізу. Тізім қысқа және алдын ала төленген, тек алып келу керек. Ол шахмат туралы әңгімелескенді ұнатады."],
+      cat: "elderly", area: "bostandyk", dist: 0.8, date: at(0, 18), dur: { h: 1, ap: true }, need: 1, req: P1, skills: ["reliability", "kindness"], diff: "easy", createdAt: Date.now() - 5 * HOUR }),
+    T({ id: "t-2",
+      title: ["Sairan lake shore cleanup", "Уборка берега озера Сайран", "Сайран көлінің жағасын тазалау"],
+      desc: ["Join our Saturday cleanup along the Sairan lake promenade. Gloves, bags and water are provided. We will sort plastic for recycling and finish with a group photo.", "Присоединяйтесь к субботней уборке на набережной озера Сайран. Перчатки, мешки и вода предоставляются. Отсортируем пластик на переработку и закончим общим фото.", "Сайран көлі жағалауындағы сенбілікке қосылыңыз. Қолғап, қап және су беріледі. Пластикті қайта өңдеуге сұрыптап, ортақ суретке түсеміз."],
+      cat: "eco", area: "auezov", dist: 3.4, date: at(3, 9), dur: { h: 4, ap: true }, need: 12, req: ECO, skills: ["teamwork", "waste"], diff: "moderate", createdAt: Date.now() - 48 * HOUR,
+      apps: [
+        app("a-3", V5, ["Count me in!", "Я в деле!", "Мен де барамын!"], "accepted", 30),
+        app("a-4", V3, ["Coming with a friend.", "Приду с подругой.", "Құрбыммен келемін."], "accepted", 26),
+        app("a-5", V4, ["I'll be there.", "Буду.", "Келемін."], "accepted", 12),
+        app("a-me-1", me, ["Happy to help with sorting plastic.", "С радостью помогу сортировать пластик.", "Пластикті сұрыптауға қуана көмектесемін."], "accepted", 8),
+      ] }),
+    T({ id: "t-3",
+      title: ["Move furniture to a new apartment", "Перевезти мебель в новую квартиру", "Жаңа пәтерге жиһаз тасу"],
+      desc: ["Young family moving from a 2nd floor flat to a new building nearby. We have a truck but need help carrying a sofa, a fridge and about 20 boxes. The new building has an elevator.", "Молодая семья переезжает со 2 этажа в новый дом неподалёку. Грузовик есть, но нужна помощь с диваном, холодильником и примерно 20 коробками. В новом доме есть лифт.", "Жас отбасы 2-қабаттағы пәтерден жақын маңдағы жаңа үйге көшіп жатыр. Жүк көлігі бар, бірақ диван, тоңазытқыш және 20-дай қорапты тасуға көмек керек. Жаңа үйде лифт бар."],
+      cat: "moving", area: "bostandyk", dist: 2.1, date: at(1, 10), dur: { h: 3, ap: true }, need: 3, req: P2, skills: ["heavy", "teamwork"], diff: "demanding", createdAt: Date.now() - 14 * HOUR,
+      apps: [app("a-6", V2, ["Strong hands ready.", "Крепкие руки готовы.", "Мықты қолдар дайын."], "accepted", 10)] }),
+    T({ id: "t-4",
+      title: ["Math tutoring for a 7th grader", "Репетитор по математике для 7-классника", "7-сынып оқушысына математикадан көмек"],
+      desc: ["Looking for someone patient to help my son catch up on fractions and basic algebra before exams. Two sessions per week at the local library on Dostyk Ave.", "Ищу терпеливого человека, который поможет сыну подтянуть дроби и основы алгебры перед экзаменами. Два занятия в неделю в библиотеке на проспекте Достык.", "Ұлыма емтихан алдында бөлшектер мен алгебра негіздерін меңгеруге көмектесетін сабырлы адам іздеймін. Достық даңғылындағы кітапханада аптасына екі сабақ."],
+      cat: "education", area: "medeu", dist: 2.9, date: at(1, 16, 30), dur: { h: 1.5, ap: false }, need: 1, req: P3, skills: ["math", "teaching", "ruKz"], diff: "moderate", createdAt: Date.now() - 9 * HOUR,
+      apps: [app("a-me-2", me, ["I studied maths at university and love explaining it.", "Я изучал математику в университете и люблю объяснять.", "Университетте математика оқыдым, түсіндіргенді ұнатамын."], "pending", 2)] }),
+    T({ id: "t-5",
+      title: ["Sort donations at the food bank", "Сортировка пожертвований в фудбанке", "Азық-түлік банкінде қайырымдылықты сұрыптау"],
+      desc: ["Help us sort and pack food parcels for 120 families before the weekend distribution. Training takes 10 minutes on site.", "Помогите рассортировать и упаковать продуктовые наборы для 120 семей перед раздачей на выходных. Обучение на месте — 10 минут.", "Демалыс күнгі таратуға дейін 120 отбасыға арналған азық-түлік себеттерін сұрыптап, орауға көмектесіңіз. Орнында 10 минуттық нұсқаулық беріледі."],
+      cat: "food", area: "turksib", dist: 6.5, date: at(4, 14), dur: { h: 3, ap: true }, need: 6, req: FOOD, skills: ["org", "teamwork"], diff: "easy", createdAt: Date.now() - 60 * HOUR,
+      apps: [app("a-7", V1, ["See you there!", "До встречи там!", "Сонда кездескенше!"], "accepted", 40), app("a-8", V3, ["Available after 14:00.", "Свободна после 14:00.", "14:00-ден кейін боспын."], "pending", 4)] }),
+    T({ id: "t-6",
+      title: ["Walk dogs at the city shelter", "Выгул собак в городском приюте", "Қалалық баспанадағы иттерді серуендету"],
+      desc: ["Our shelter dogs need walks and socialisation. Perfect for animal lovers. We'll match you with calm dogs first. Please wear comfortable shoes.", "Собакам из приюта нужны прогулки и общение. Отлично подойдёт любителям животных. Сначала дадим спокойных собак. Наденьте удобную обувь.", "Баспанадағы иттерге серуен мен қарым-қатынас керек. Жануар сүйетіндерге өте лайық. Алдымен жуас иттерді береміз. Ыңғайлы аяқ киім киіңіз."],
+      cat: "animals", area: "nauryzbay", dist: 9.8, date: at(5, 11), dur: { h: 2, ap: true }, need: 4, req: P4, skills: ["animals", "calm"], diff: "easy", createdAt: Date.now() - 22 * HOUR }),
+    T({ id: "t-7",
+      title: ["Set up a Nauryz courtyard celebration", "Подготовить праздник Наурыз во дворе", "Аулада Наурыз мерекесін дайындау"],
+      desc: ["Our courtyard is hosting a small Nauryz gathering for neighbours. We need help setting up tables, a yurt-style tent and decorations, then cleaning up afterwards.", "Во дворе пройдёт небольшой праздник Наурыз для соседей. Нужна помощь с установкой столов, шатра в стиле юрты и украшений, а потом с уборкой.", "Ауламызда көршілерге арналған шағын Наурыз мерекесі өтеді. Үстелдер, киіз үй тәрізді шатыр мен безендіру орнатуға, кейін жинастыруға көмек керек."],
+      cat: "events", area: "zhetysu", dist: 4.2, date: at(6, 12), dur: { h: 5, ap: true }, need: 5, req: P5, skills: ["setup", "teamwork", "creativity"], diff: "moderate", createdAt: Date.now() - 30 * HOUR }),
+    T({ id: "t-8",
+      title: ["Teach seniors to use a smartphone", "Научить пенсионеров пользоваться смартфоном", "Зейнеткерлерді смартфон қолдануға үйрету"],
+      desc: ["A small group of pensioners at the community centre want to learn video calls, messengers and online banking safety. Slides are ready; you just guide them.", "Небольшая группа пенсионеров в общественном центре хочет научиться видеозвонкам, мессенджерам и безопасности онлайн-банкинга. Слайды готовы — нужно только помогать.", "Қоғамдық орталықтағы зейнеткерлер тобы бейне қоңырау, мессенджерлер және онлайн-банкинг қауіпсіздігін үйренгісі келеді. Слайдтар дайын, тек бағыт беру керек."],
+      cat: "tech", area: "alatau", dist: 7.1, date: at(2, 15), dur: { h: 2, ap: false }, need: 2, req: P1, skills: ["phones", "patience", "explain"], diff: "easy", createdAt: Date.now() - 16 * HOUR }),
+    T({ id: "t-done-1",
+      title: ["Plant trees in Baum Grove", "Посадка деревьев в роще Баума", "Баум тоғайында ағаш отырғызу"],
+      desc: ["Spring tree planting with neighbours in the historic Baum Grove.", "Весенняя посадка деревьев с соседями в исторической роще Баума.", "Тарихи Баум тоғайында көршілермен көктемгі ағаш отырғызу."],
+      cat: "eco", area: "turksib", dist: 5.0, date: at(-12, 10), dur: { h: 4, ap: false }, need: 8, req: ECO, skills: ["gardening", "teamwork"], diff: "moderate", createdAt: Date.now() - 500 * HOUR, done: true,
+      apps: [app("a-d1", me, ["Ready to plant!", "Готов сажать!", "Отырғызуға дайынмын!"], "accepted", 400)],
+      reviews: [{ vid: ME, vname: me.name, author: ECO.name, rating: 5, text: ["Planted 14 saplings with the team and helped newcomers. Very reliable!", "Вместе с командой посадил 14 саженцев и помогал новичкам. Очень надёжный волонтёр!", "Командамен 14 көшет отырғызды, жаңадан келгендерге көмектесті. Өте сенімді!"], ver: { level: "ok", score: 94, flags: [] } }] }),
+  ];
+}
+
+const HISTORY = [
+  { title: ["Plant trees in Baum Grove", "Посадка деревьев в роще Баума", "Баум тоғайында ағаш отырғызу"], cat: "eco", when: ["12 days ago", "12 дней назад", "12 күн бұрын"], h: 4, r: 5, by: "Taza Almaty Initiative" },
+  { title: ["Library book sorting", "Сортировка книг в библиотеке", "Кітапханада кітап сұрыптау"], cat: "education", when: ["September", "Сентябрь", "Қыркүйек"], h: 3, r: 5, by: "Almaty Central Library" },
+  { title: ["Groceries for Apa Raushan", "Продукты для апы Раушан", "Раушан апаға азық-түлік"], cat: "elderly", when: ["September", "Сентябрь", "Қыркүйек"], h: 1, r: 5, by: "Saule Nurlanovna" },
+  { title: ["Food parcels for 80 families", "Продуктовые наборы для 80 семей", "80 отбасыға азық-түлік себеті"], cat: "food", when: ["August", "Август", "Тамыз"], h: 4, r: 4, by: "Meirim Food Bank" },
+  { title: ["Kok-Tobe trail cleanup", "Уборка тропы на Кок-Тобе", "Көктөбе соқпағын тазалау"], cat: "eco", when: ["August", "Август", "Тамыз"], h: 5, r: 5, by: "Taza Almaty Initiative" },
+  { title: ["Laptop setup for a school", "Настройка ноутбуков для школы", "Мектепке ноутбук баптау"], cat: "tech", when: ["July", "Июль", "Шілде"], h: 2, r: 5, by: "School No. 54" },
+];
+const BASE_RATINGS = [5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 5];
+
+const accepted = (x) => x.apps.filter((a) => a.status === "accepted").length;
+const pending = (x) => x.apps.filter((a) => a.status === "pending").length;
+const spots = (x) => Math.max(0, x.need - accepted(x));
+const status = (x) => (x.done ? "done" : spots(x) === 0 ? "ready" : "open");
+const appOf = (x, id) => x.apps.find((a) => a.v.id === id);
+
+/* ================= simulated AI: task analyzer =================
+   Rule-based keyword analyzer (English, Russian, Kazakh). Runs in the browser;
+   it is not connected to any AI model. */
+const KW = {
+  elderly: ["grandmother", "grandfather", "grandma", "grandpa", "elderly", "senior", "pensioner", "veteran", "old lady", "old man", "ateje", "babushka", "care", "medicine", "pharmacy", "lives alone",
+    "бабушк", "дедушк", "пожил", "пенсионер", "ветеран", "живёт одна", "живет одна", "живёт один", "лекарств", "аптек",
+    "әже", "ата", "қарт", "зейнеткер", "ардагер", "жалғыз тұр", "дәрі"],
+  moving: ["move", "moving", "furniture", "sofa", "wardrobe", "fridge", "piano", "boxes", "carry", "lift", "truck", "assemble",
+    "переезд", "перевез", "мебел", "диван", "шкаф", "холодильник", "пианино", "коробк", "перенес", "поднять", "грузовик", "грузч",
+    "көшу", "көшіп", "көшір", "жиһаз", "тоңазытқыш", "қорап", "көтер", "тасу", "жүк көлігі"],
+  eco: ["cleanup", "clean up", "litter", "trash", "garbage", "recycl", "plastic", "tree", "plant", "park", "lake", "river", "eco", "green", "waste",
+    "субботник", "уборк", "мусор", "пластик", "дерев", "саженц", "парк", "озер", "переработ",
+    "сенбілік", "тазала", "қоқыс", "ағаш", "көшет", "саябақ", "көлі", "көлдің", "қайта өңде"],
+  education: ["tutor", "teach", "lesson", "homework", "math", "english", "exam", "school", "student", "study", "reading", "learn", "library",
+    "репетитор", "урок", "математик", "экзамен", "школ", "учени", "научить", "библиотек",
+    "сабақ", "оқушы", "мектеп", "емтихан", "үйрет", "кітапхана", "математика"],
+  food: ["food", "meal", "cook", "parcel", "donation", "kitchen", "bread", "soup", "hungry", "iftar", "food bank", "packing",
+    "еда", "продукт", "пожертвован", "фудбанк", "кухн", "обед",
+    "азық", "тамақ", "қайырымдылық", "себет"],
+  animals: ["dog", "cat", "shelter", "animal", "pet", "puppy", "kitten", "vet", "walk the",
+    "собак", "кошк", "приют", "животн", "щен",
+    "иттер", "итті", "мысық", "баспана", "жануар", "күшік"],
+  events: ["event", "festival", "nauryz", "concert", "celebration", "decorat", "marathon", "registration desk", "tent", "stage", "fair",
+    "наурыз", "праздник", "мероприят", "фестивал", "концерт", "украшен", "шатёр", "шатер",
+    "мереке", "іс-шара", "безендір", "шатыр"],
+  tech: ["smartphone", "phone", "laptop", "computer", "internet", "app", "whatsapp", "telegram", "video call", "printer", "wifi", "online",
+    "телефон", "смартфон", "ноутбук", "компьютер", "интернет", "видеозвон", "приложени",
+    "бейне қоңырау", "ғаламтор", "қосымша"],
+};
+const HEAVY = ["heavy", "piano", "fridge", "sofa", "wardrobe", "no elevator", "no lift", "stairs", "5th floor", "4th floor", "washing machine", "cement", "construction",
+  "тяжёл", "тяжел", "пианино", "холодильник", "диван", "шкаф", "без лифта", "лифта нет", "5 этаж", "4 этаж",
+  "ауыр", "пианино", "лифт жоқ", "5-қабат", "4-қабат"];
+const LONG = ["all day", "whole day", "weekend", "6 hours", "8 hours", "every day", "весь день", "выходн", "каждый день", "күні бойы", "демалыс"];
+const CARE = ["disabled", "wheelchair", "hospital", "medical", "sick", "инвалид", "коляск", "больниц", "болен", "мүгедек", "аурухана", "ауру"];
+const BIG = ["park", "lake", "festival", "families", "community", "district", "marathon", "парк", "озер", "фестивал", "семей", "саябақ", "көлі", "отбасы"];
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const has = (text, k) => new RegExp("(?<![\\p{L}\\d])" + reEsc(k), "u").test(text);
+const hasWord = (text, k) => new RegExp("(?<![\\p{L}\\d])" + reEsc(k) + "(?![\\p{L}\\d])", "u").test(text);
+const BASE_EFFORT = { moving: 2, eco: 1, events: 1, elderly: 1 };
+const BASE_VOL = { moving: 3, eco: 8, events: 5, food: 4, animals: 2, elderly: 1, education: 1, tech: 1 };
+const BASE_SKILLS = { elderly: ["patience", "kindness"], moving: ["teamwork", "fitness"], eco: ["teamwork", "waste"], education: ["teaching", "explain"], food: ["org", "hygiene"], animals: ["animals", "calm"], events: ["setup", "comm"], tech: ["phones", "patience"] };
+
+function analyze(title, desc) {
+  const text = `${title} ${desc}`.toLowerCase().trim();
+  if (text.length < 8) return null;
+  const scores = Object.fromEntries(Object.entries(KW).map(([c, w]) => { const n = w.filter((k) => has(text, k)).length; return [c, c === "elderly" ? n * 2 : n]; }));
+  const [bestCat, bestScore] = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const cat = bestScore === 0 ? "events" : bestCat;
+  const confidence = bestScore === 0 ? 35 : Math.min(97, Math.max(45, 55 + bestScore * 12 - (total - bestScore) * 5));
+  const signals = [];
+  if (bestScore > 0) signals.push(["s_match", { w: KW[cat].filter((k) => has(text, k)).slice(0, 3).join(", "), cat }]);
+  else signals.push(["s_none", {}]);
+  const heavy = HEAVY.filter((k) => has(text, k)), long = LONG.some((k) => has(text, k)), care = CARE.some((k) => has(text, k));
+  let effort = BASE_EFFORT[cat] || 0;
+  if (heavy.length) { effort += 2; signals.push(["s_heavy", { w: heavy[0] }]); }
+  if (long) { effort += 1; signals.push(["s_long", {}]); }
+  if (care) { effort += 1; signals.push(["s_care", {}]); }
+  const diff = effort >= 4 ? "demanding" : effort >= 2 ? "moderate" : "easy";
+  let vols = BASE_VOL[cat] + (heavy.length ? 1 : 0) + (BIG.some((k) => has(text, k)) ? 2 : 0);
+  const m = text.match(/(\d{1,2})\s*(volunteers|people|helpers|человек|волонт|адам|ерікті)/u);
+  if (m) { vols = +m[1]; signals.push(["s_count", {}]); }
+  vols = Math.min(30, Math.max(1, vols));
+  const skills = [...BASE_SKILLS[cat]];
+  if (heavy.length) skills.push("heavy");
+  if (["car", "drive", "driving", "truck"].some((k) => hasWord(text, k)) || ["машин", "грузовик", "көлік"].some((k) => has(text, k))) skills.push("driving");
+  if (has(text, "english") || has(text, "английск") || has(text, "ағылшын")) skills.push("english");
+  if (has(text, "kazakh") || has(text, "казахск") || has(text, "қазақ")) skills.push("kazakh");
+  if (["kid", "child", "дет", "ребён", "ребен", "бала"].some((k) => has(text, k))) skills.push("kids");
+  if (care) skills.push("firstaid");
+  return { cat, confidence, diff, vols, skills: [...new Set(skills)].slice(0, 5), signals };
+}
+
+/* ================= simulated AI: review verification =================
+   Flags unusual claims for a person to double-check. Never declares fraud. */
+const SOLO = ["alone", "by himself", "by herself", "by myself", "single-handedly", "on his own", "on her own", "one volunteer",
+  "в одиночку", "один волонт", "одна волонт", "один ", "одна ", "сам ", "сама ",
+  "жалғыз", "бір ерікті", "өзі ғана"];
+const SUPER = ["best ever", "perfect", "incredible", "amazing", "unbelievable", "superhero", "miracle", "legendary", "100%", "flawless",
+  "лучший", "идеальн", "невероятн", "потрясающ", "супергеро", "чудо",
+  "керемет", "таңғаларлық", "мінсіз", "ең жақсы", "батыр", "ғажап"];
+const NEG = ["late", "rude", "didn't come", "did not come", "no-show", "careless", "bad", "опоздал", "груб", "не пришёл", "не пришел", "плох", "кешікті", "дөрекі", "келмеді", "нашар"];
+const CLAIMS = [
+  ["One volunteer carried a 500 kg piano alone up to the 3rd floor.", "Один волонтёр в одиночку поднял пианино весом 500 кг на 3 этаж.", "Бір ерікті 500 кг пианиноны жалғыз өзі 3-қабатқа көтерді."],
+  ["Dana helped with groceries, arrived on time and was very kind to my grandmother.", "Дана помогла с продуктами, пришла вовремя и была очень добра к моей бабушке.", "Дана азық-түлікке көмектесті, уақытында келді және әжеме өте мейірімді болды."],
+  ["Amazing, incredible, perfect, best ever volunteer!!! A real superhero.", "Потрясающий, невероятный, идеальный, лучший волонтёр!!! Настоящий супергерой.", "Керемет, таңғаларлық, мінсіз, ең жақсы ерікті!!! Нағыз батыр."],
+  ["We worked 20 hours straight without a break and cleaned the whole park.", "Мы работали 20 часов без перерыва и убрали весь парк.", "Біз 20 сағат үзіліссіз жұмыс істеп, бүкіл саябақты тазаладық."],
+];
+function verify(text, rating, teamSize) {
+  const s0 = String(text).toLowerCase(); const flags = []; let s = 96;
+  const kg = Math.max(-1, ...[...s0.matchAll(/(\d{2,4})\s*(kg|kilo|кг|килограм)/gu)].map((x) => +x[1]));
+  const solo = SOLO.some((w) => s0.includes(w)) || teamSize === 1;
+  if (kg > 80 && solo) { s -= 55; flags.push(["f_heavy", "f_heavy_b", { kg }]); }
+  else if (kg > 300) { s -= 15; flags.push(["f_weight", "f_weight_b", {}]); }
+  const hrs = Math.max(-1, ...[...s0.matchAll(/(\d{1,3})\s*(hours|hrs|час|сағат)/gu)].map((x) => +x[1]));
+  if (hrs > 16) { s -= 30; flags.push(["f_dur", "f_dur_b", { h: hrs }]); }
+  const helped = s0.match(/(?:helped|fed|saved|cleaned|помог\S*|накормил\S*|көмектесті)\s+(\d{3,6})/u);
+  if (helped && +helped[1] >= 500 && solo) { s -= 30; flags.push(["f_scale", "f_scale_b", { n: helped[1] }]); }
+  const sup = SUPER.filter((w) => s0.includes(w)).length;
+  if (sup >= 3) { s -= 12; flags.push(["f_promo", "f_promo_b", {}]); }
+  if (rating != null) {
+    const neg = NEG.filter((w) => s0.includes(w)).length;
+    if (rating >= 5 && neg >= 2) { s -= 15; flags.push(["f_mis", "f_mis_hi", {}]); }
+    else if (rating <= 2 && sup >= 1 && neg === 0) { s -= 15; flags.push(["f_mis", "f_mis_lo", {}]); }
+  }
+  const len = s0.trim().length;
+  if (len > 0 && len <= 12) { s -= 6; flags.push(["f_short", "f_short_b", {}]); }
+  s = Math.min(99, Math.max(3, s));
+  const level = s < 60 ? "needs" : flags.length && s < 90 ? "light" : "ok";
+  return { level, score: s, flags };
+}
+const LEVEL = { ok: ["lv_ok", "p-primary"], light: ["lv_light", "p-amber"], needs: ["lv_needs", "p-danger"] };
+
+/* ================= state ================= */
+const S = {
+  accounts: { [DEMO_EMAIL]: { name: "Aigerim Bekova", email: DEMO_EMAIL, pass: DEMO_PASS } },
+  session: null, me: person(ME, "Aigerim Bekova", 4.9, 7, true, 2024),
+  tasks: [], role: "volunteer", tab: "home", stack: [], scroll: {},
+  booting: LIVE,
+  auth: null, authF: null,
+  q: "", cat: null, sort: "nearest", myTab: null,
+  draft: null, sheet: null,
+  ratings: [], history: [], hours: 0,
+  lab: { task: null, review: null, rating: 5 }, // null = follow the current language's sample
+};
+S.tasks = LIVE ? [] : seed(S.me);
+function resetAuthForm() { S.authF = { name: "", email: "", pass: "", show: false, err: "", errMsg: "", code: "", pending: null, demoCode: null, busy: false, resendAt: 0 }; }
+resetAuthForm();
+const newDraft = () => ({ title: "", desc: "", cat: null, area: "bostandyk", day: 1, hour: 11, vols: 2, skills: [], diff: "moderate", errors: false });
+S.draft = newDraft();
+
+const task = (id) => S.tasks.find((x) => x.id === id);
+const update = (id, fn) => { const i = S.tasks.findIndex((x) => x.id === id); if (i >= 0) S.tasks[i] = fn(S.tasks[i]); };
+const myRequests = () => S.tasks.filter((x) => x.req.id === ME).sort((a, b) => (a.done - b.done) || b.createdAt - a.createdAt);
+const myApps = () => S.tasks.filter((x) => appOf(x, ME)).sort((a, b) => (a.done - b.done) || a.date - b.date);
+const pendingForMe = () => myRequests().filter((x) => !x.done).reduce((n, x) => n + pending(x), 0);
+const allRatings = () => (LIVE ? myReviews().map(([, v]) => v.rating) : BASE_RATINGS.concat(S.ratings));
+const myReviews = () => S.tasks.flatMap((x) => x.reviews.filter((v) => v.vid === ME).map((v) => [x, v]));
+
+let toastTimer;
+function toast(msg) {
+  const el = $("#toast"); el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+function renameMe(name) {
+  S.me = { ...S.me, name };
+  S.tasks = S.tasks.map((x) => ({ ...x, req: x.req.id === ME ? S.me : x.req, apps: x.apps.map((a) => (a.v.id === ME ? { ...a, v: S.me } : a)), reviews: x.reviews.map((r) => (r.vid === ME ? { ...r, vname: name } : r)) }));
+}
+function startSession(acc) {
+  renameMe(acc.name);
+  S.session = { name: acc.name, email: acc.email, demo: acc.email === DEMO_EMAIL };
+  S.role = "volunteer"; S.tab = "home"; S.stack = []; S.auth = null;
+  resetAuthForm();
+  render(); window.scrollTo(0, 0);
+}
+
+/* ================= data: live database ================= */
+const SELECT = `*, requester:profiles!tasks_requester_id_fkey(id,name,created_at),
+  applications(id,volunteer_id,message,status,created_at, volunteer:profiles!applications_volunteer_id_fkey(id,name,created_at)),
+  reviews(id,volunteer_id,rating,text,verification,created_at, author:profiles!reviews_author_id_fkey(id,name), volunteer:profiles!reviews_volunteer_id_fkey(id,name))`;
+const i18nTuple = (o, fallback) => (o && (o.en || o.ru || o.kk) ? [o.en || fallback, o.ru || o.en || fallback, o.kk || o.en || fallback] : fallback);
+const parseDur = (v) => { const s0 = String(v ?? "2"); return { h: s0.replace("~", ""), ap: s0.startsWith("~") }; };
+const durString = (d) => `${d.ap ? "~" : ""}${d.h}`;
+
+async function loadAll() {
+  const { data, error } = await sb.from("tasks").select(SELECT).order("created_at", { ascending: false });
+  if (error) throw error;
+  const ratings = {};
+  data.forEach((r0) => r0.reviews.forEach((v) => (ratings[v.volunteer_id] ??= []).push(v.rating)));
+  const pp = (p) => {
+    if (!p) return null;
+    const rs = ratings[p.id] || [];
+    return person(p.id, p.name, rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null, rs.length, true, new Date(p.created_at).getFullYear());
+  };
+  S.tasks = data.map((r0) => ({
+    id: r0.id,
+    title: i18nTuple(r0.title_i18n, r0.title), desc: i18nTuple(r0.description_i18n, r0.description),
+    cat: r0.category, area: r0.area, dist: null, date: new Date(r0.starts_at), dur: parseDur(r0.duration_h),
+    need: r0.volunteers_needed,
+    req: r0.requester ? pp(r0.requester) : person("org:" + r0.org_name, r0.org_name, null, 0, true, new Date(r0.created_at).getFullYear()),
+    skills: r0.skills || [], diff: r0.difficulty, done: r0.completed, createdAt: Date.parse(r0.created_at),
+    apps: r0.applications.filter((a) => a.volunteer).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
+      .map((a) => ({ id: a.id, v: pp(a.volunteer), msg: a.message, status: a.status, at: Date.parse(a.created_at) })),
+    reviews: r0.reviews.map((v) => ({ vid: v.volunteer_id, vname: v.volunteer?.name || "", author: v.author?.name || "", rating: v.rating, text: v.text, ver: v.verification || verify(v.text, v.rating, null) })),
+  }));
+  const meRow = data.flatMap((r0) => [r0.requester, ...r0.applications.map((a) => a.volunteer)]).find((p) => p?.id === ME);
+  if (meRow) S.me = { ...pp(meRow) };
+}
+
+/** One interface for both modes; every method resolves when the data is up to date. */
+const api = {
+  async createTask(d) {
+    const row = { title: d.title, description: d.desc, category: d.cat, area: d.area, starts_at: d.date.toISOString(), duration_h: durString(d.dur), volunteers_needed: d.need, skills: d.skills, difficulty: d.diff };
+    if (LIVE) { const { error } = await sb.from("tasks").insert(row); if (error) throw error; return loadAll(); }
+    S.tasks.unshift({ id: "t-" + uid(), title: d.title, desc: d.desc, cat: d.cat, area: d.area, dist: 0.4, date: d.date, dur: d.dur, need: d.need, req: S.me, skills: d.skills, diff: d.diff, apps: [], done: false, reviews: [], createdAt: Date.now() });
+  },
+  async apply(taskId, note) {
+    if (LIVE) { const { error } = await sb.from("applications").insert({ task_id: taskId, message: note }); if (error) throw error; return loadAll(); }
+    update(taskId, (y) => ({ ...y, apps: [...y.apps, app("a-" + uid(), S.me, note, "pending", 0)] }));
+  },
+  async withdraw(taskId) {
+    if (LIVE) { const { error } = await sb.from("applications").delete().eq("task_id", taskId).eq("volunteer_id", ME).eq("status", "pending"); if (error) throw error; return loadAll(); }
+    update(taskId, (y) => ({ ...y, apps: y.apps.filter((a) => !(a.v.id === ME && a.status === "pending")) }));
+  },
+  async decide(taskId, appId, status) {
+    if (LIVE) { const { error } = await sb.from("applications").update({ status }).eq("id", appId); if (error) throw error; return loadAll(); }
+    update(taskId, (y) => (status === "accepted" && spots(y) === 0 ? y : { ...y, apps: y.apps.map((a) => (a.id === appId ? { ...a, status } : a)) }));
+  },
+  async complete(taskId, reviews) {
+    if (LIVE) {
+      const rows = reviews.map((v) => ({ task_id: taskId, volunteer_id: v.vid, rating: v.rating, text: v.text, verification: v.ver }));
+      if (rows.length) { const { error } = await sb.from("reviews").insert(rows); if (error) throw error; }
+      const { error } = await sb.from("tasks").update({ completed: true }).eq("id", taskId); if (error) throw error;
+      return loadAll();
+    }
+    update(taskId, (y) => ({ ...y, done: true, reviews: [...y.reviews, ...reviews] }));
+  },
+};
+
+/* ================= auth: password + emailed code ================= */
+const demoCode = () => String(Math.floor(100000 + Math.random() * 900000));
+const auth = {
+  /** Step 1 of sign-up: create the account and send the confirmation code. */
+  async register(name, email, pass) {
+    if (LIVE) {
+      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name } } });
+      if (error) throw error;
+      if (data.user && !data.user.identities?.length) throw new Error("already registered");
+    } else {
+      if (S.accounts[email]) throw new Error("already registered");
+      S.accounts[email] = { name, email, pass, unconfirmed: true };
+      S.authF.demoCode = demoCode();
+    }
+    return { mode: "signup", email };
+  },
+  /** Step 1 of sign-in: check the password, then email a one-time code. */
+  async login(email, pass) {
+    if (LIVE) {
+      const { data: pw, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) {
+        if (/not confirmed/i.test(error.message)) { await sb.auth.resend({ type: "signup", email }); return { mode: "signup", email, err: "e_unconfirmed" }; }
+        throw error;
+      }
+      // Server-side proof that the password step happened (only a password session may write it).
+      const proof = await sb.from("login_proofs").insert({ user_id: pw.user.id });
+      await sb.auth.signOut({ scope: "local" });
+      if (proof.error) throw proof.error;
+      const { error: e2 } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+      if (e2) throw e2;
+    } else {
+      const acc = S.accounts[email];
+      if (!acc || acc.pass !== pass) throw new Error("Invalid login credentials");
+      S.authF.demoCode = demoCode();
+      return { mode: acc.unconfirmed ? "signup" : "login", email };
+    }
+    return { mode: "login", email };
+  },
+  /** Step 2: verify the emailed code and open the session. */
+  async verify(pending, code) {
+    if (LIVE) {
+      const { data, error } = await sb.auth.verifyOtp({ email: pending.email, token: code, type: pending.mode === "signup" ? "signup" : "email" });
+      if (error) throw error;
+      return finishLive(data.session);
+    }
+    if (code !== S.authF.demoCode) throw new Error("Token has expired or is invalid");
+    const acc = S.accounts[pending.email]; delete acc.unconfirmed;
+    startSession(acc);
+  },
+  async resend(pending) {
+    if (LIVE) {
+      const { error } = pending.mode === "signup"
+        ? await sb.auth.resend({ type: "signup", email: pending.email })
+        : await sb.auth.signInWithOtp({ email: pending.email, options: { shouldCreateUser: false } });
+      if (error) throw error;
+    } else S.authF.demoCode = demoCode();
+  },
+  async logout() { if (LIVE) await sb.auth.signOut({ scope: "local" }); },
+};
+
+async function finishLive(session) {
+  const u = session.user;
+  ME = u.id;
+  S.me = person(u.id, u.user_metadata?.name || u.email.split("@")[0], null, 0, true, new Date(u.created_at).getFullYear());
+  await loadAll();
+  S.session = { name: S.me.name, email: u.email, demo: false };
+  S.role = "volunteer"; S.tab = "home"; S.stack = []; S.auth = null; S.booting = false;
+  resetAuthForm();
+  render(); window.scrollTo(0, 0);
+}
+
+async function boot() {
+  try {
+    await loadSupabase();
+    sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
+    const { data } = await sb.auth.getSession();
+    if (data.session && isCodeSession(data.session)) return await finishLive(data.session);
+    if (data.session) await sb.auth.signOut({ scope: "local" }); // half-finished sign-in
+  } catch (e) {
+    S.bootErr = errText(e);
+  }
+  S.booting = false; render();
+}
+
+/* ================= small components ================= */
+const catTile = (c, s = 44) => `<span class="cat-tile cat-${c}" style="width:${s}px;height:${s}px">${icon(CATS[c].icon, s >= 48 ? "l" : "")}</span>`;
+const AV = ["eco", "moving", "education", "animals", "events"];
+const avatar = (name, s = 44, ring = false) => `<span class="avatar cat-${AV[hash(name) % AV.length]} ${ring ? "ring" : ""}" style="width:${s}px;height:${s}px;font-size:${Math.round(s * 0.36)}px" aria-hidden="true">${esc(initials(name))}</span>`;
+const pill = (text, tone, opts = {}) => `<span class="pill ${tone}">${opts.dot ? '<i class="d"></i>' : ""}${opts.icon ? icon(opts.icon, "xs") : ""}${esc(text)}</span>`;
+const statusPill = (s) => pill(t("st_" + s), { open: "p-primary", ready: "p-info", done: "p-muted" }[s], { dot: true });
+const appPill = (s) => pill(t("ap_" + s), { pending: "p-amber", accepted: "p-primary", rejected: "p-danger" }[s], { dot: true });
+const diffPill = (d) => pill(DIFF(d), { easy: "p-primary", moderate: "p-amber", demanding: "p-danger" }[d]);
+const aiBadge = () => pill(t("sim_ai"), "p-info", { icon: "sparkle" });
+const demoBadge = (txt = t("demo_data")) => pill(txt, "p-amber", { icon: "info" });
+const progress = (a, n) => `<div class="progress" role="progressbar" aria-valuenow="${a}" aria-valuemax="${n}" aria-label="${esc(t("confirmed", { a, n }))}"><i style="width:${n ? Math.min(100, (a / n) * 100) : 0}%"></i></div>`;
+const stars = (n, cls = "xs") => `<span class="stars" aria-label="${esc(t("stars_of", { n }))}">${[1, 2, 3, 4, 5].map((i) => `<span class="${i <= n ? "" : "off"}">${icon("star", cls)}</span>`).join("")}</span>`;
+const seg = (opts, sel, act) => `<div class="seg" role="group">
+  <span class="thumb" style="width:calc((100% - 8px) / ${opts.length});transform:translateX(${sel * 100}%)"></span>
+  ${opts.map((o, i) => `<button type="button" aria-pressed="${i === sel}" data-act="${act}" data-v="${o.v}">${o.icon ? icon(o.icon, "s") : ""}<span>${esc(o.label)}</span></button>`).join("")}</div>`;
+const roleSeg = () => seg([{ v: "volunteer", label: t("volunteer"), icon: "hand" }, { v: "requester", label: t("requester"), icon: "megaphone" }], S.role === "volunteer" ? 0 : 1, "role");
+const langSwitch = () => `<div class="lang" role="group" aria-label="${esc(t("language"))}">${LANGS.map((l) => `<button type="button" data-act="lang" data-v="${l.v}" aria-pressed="${lang === l.v}" lang="${l.v}" title="${l.name}">${l.label}</button>`).join("")}</div>`;
+const personLine = (p, s = 44) => `<div class="person">${avatar(p.name, s)}<div class="grow"><div class="nm">${esc(p.name)}${p.verified ? `<span title="${esc(t("verified"))}">${icon("verified", "s")}</span>` : ""}</div><div class="sub">${icon("star", "xs")}<span class="num">${esc(p.rating == null ? `${t("new_member")} · ${p.since}` : t("tasks_since", { r: p.rating.toFixed(1), d: p.done, y: p.since }))}</span></div></div></div>`;
+const empty = (ic, title, body, action = "") => `<div class="empty"><div class="em-ic">${icon(ic, "l")}</div><h3>${esc(title)}</h3><p>${esc(body)}</p>${action ? `<div style="margin-top:12px">${action}</div>` : ""}</div>`;
+
+function verificationHTML(v) {
+  const [label, tone] = LEVEL[v.level];
+  return `<div class="row" style="flex-wrap:wrap">${pill(t(label), tone, { dot: true })}<span class="small muted num">${esc(t("plaus", { n: v.score }))}</span></div>
+    ${v.flags.map(([ti, body, vars]) => `<div class="flag" style="color:${v.level === "needs" ? "var(--danger)" : "var(--amber)"}">${icon("flag", "s")}<div style="color:var(--ink)"><b>${esc(t(ti))}</b><span>${esc(t(body, vars))}</span></div></div>`).join("")}
+    ${v.level === "needs" ? `<p class="verify-note">${esc(t("verify_note"))}</p>` : ""}`;
+}
+
+function analysisHTML(a, { title = "ASAR Assist", signals = true, footer = "" } = {}) {
+  return `<div class="card ai-card">
+    <div class="row"><b class="grow" style="font-size:16px">${esc(title)}</b>${aiBadge()}</div>
+    <div class="stats3">
+      <div class="st"><small>${esc(t("category"))}</small><b>${esc(catShort(a.cat))}</b></div>
+      <div class="st"><small>${esc(t("difficulty"))}</small><b>${esc(DIFF(a.diff))}</b></div>
+      <div class="st"><small>${esc(t("team"))}</small><b class="num">${esc(t("people", { n: a.vols }))}</b></div>
+    </div>
+    <div class="small muted" style="margin-bottom:6px">${esc(t("sugg_skills"))}</div>
+    <div class="chips" style="gap:6px">${a.skills.map((s) => pill(skill(s), "p-neutral")).join("")}</div>
+    ${signals ? `<ul>${a.signals.map(([k, v]) => `<li>${esc(t(k, v.cat ? { ...v, c: catLabel(v.cat) } : v))}</li>`).join("")}</ul><p class="ai-note num">${esc(t("confidence", { n: a.confidence }))}</p>` : ""}
+    ${footer ? `<div style="margin-top:12px">${footer}</div>` : ""}
+  </div>`;
+}
+
+function reviewHTML(r, title) {
+  return `<div class="card" style="display:flex;flex-direction:column;gap:10px">
+    ${title ? `<div class="small muted">${esc(title)}</div>` : ""}
+    <div class="row">${avatar(r.author, 32)}<div class="grow"><b style="font-size:14px">${esc(r.author)}</b><div class="small muted">${esc(t("about_v", { n: r.vname }))}</div></div>${stars(r.rating)}</div>
+    ${L(r.text) ? `<p>${esc(L(r.text))}</p>` : ""}
+    <div>${verificationHTML(r.ver)}</div>
+  </div>`;
+}
+
+/* ================= views: welcome / auth ================= */
+function welcomeView() {
+  const b = (x, y, inner, cls = "", delay = 0) => `<div class="b ${cls}" style="left:${x}%;top:${y}%;animation-delay:-${delay}s"><div>${inner}</div></div>`;
+  return `<div class="welcome">
+    <div class="brand row">${logoMark(38)}<span class="logo" style="cursor:default">asar</span><span class="grow"></span>${langSwitch()}</div>
+    <div class="copy">
+      <h1>${esc(t("w_h1a"))}<span class="accent">${esc(t("w_h1b"))}</span></h1>
+      <p class="lede">${esc(t("w_lede"))}</p>
+      <div class="ctas">
+        <button class="btn primary" data-act="goAuth" data-v="register">${esc(t("create_account"))}</button>
+        <button class="btn secondary" data-act="goAuth" data-v="login">${esc(t("have_account"))}</button>
+        ${LIVE ? "" : `<button class="btn quiet" data-act="demo">${esc(t("explore_demo"))}</button>`}
+      </div>
+      <p class="fine">${esc(t(LIVE ? "w_fine_live" : "w_fine"))}</p>
+      ${S.bootErr ? `<div class="notice err" role="alert">${esc(S.bootErr)}</div>` : ""}
+    </div>
+    <div class="orbit" aria-hidden="true">
+      <div class="ringa"></div><div class="ringb"></div>
+      <div class="core"><div class="heart">${icon("heart", "l")}</div></div>
+      ${b(19, 21, avatar("Dana Serikova", 48))}${b(83, 30, avatar("Arman Tulegenov", 48), "", 2)}
+      ${b(15, 71, avatar("Saule Nurlanovna", 48), "", 4)}${b(87, 75, avatar("Madina Zhumabaeva", 48), "", 1)}
+      ${b(53, 7, catTile("elderly", 36), "sq", 3)}${b(94, 54, catTile("eco", 36), "sq", 5)}
+      ${b(4, 48, catTile("education", 36), "sq", 1.5)}${b(45, 93, catTile("food", 36), "sq", 2.5)}
+      ${b(51, 78, `<i></i>${esc(t("w_chip"))}`, "chipb", 3.5)}
+    </div>
+  </div>`;
+}
+
+const authErr = (f) => (f.err ? `<div class="notice err" role="alert">${esc(t(f.err, { m: f.errMsg }))}</div>` : "");
+const steps = (pwDone) => `<div class="steps" aria-hidden="true"><span class="${pwDone ? "done" : "on"}">${icon(pwDone ? "check" : "key", "xs")}${esc(t("step_pw"))}</span><i></i><span class="${pwDone ? "on" : ""}">${icon("mail", "xs")}${esc(t("step_code"))}</span></div>`;
+
+function codeView() {
+  const f = S.authF, pd = f.pending, wait = Math.max(0, Math.ceil((f.resendAt - Date.now()) / 1000));
+  return `<div class="auth">
+    <div class="row"><button class="icon-btn" data-act="codeBack" aria-label="${esc(t("back"))}">${icon("back")}</button><span class="grow"></span>${langSwitch()}</div>
+    ${steps(true)}
+    <div><h1>${esc(t("check_email"))}</h1><p class="muted" style="margin-top:6px;font-size:16px">${esc(t(pd.mode === "signup" ? "code_sent_signup" : "code_sent_login", { e: pd.email }))}</p></div>
+    ${!LIVE && f.demoCode ? `<div class="notice amber">${icon("info")}<div>${esc(t("demo_code", { c: f.demoCode }))}</div></div>` : ""}
+    <form id="code-form" class="stack" style="gap:16px" novalidate>
+      <div class="field"><label for="f-code">${esc(t("code_label"))}</label><input class="input code-input" id="f-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="••••••" value="${esc(f.code)}"></div>
+      ${authErr(f)}
+      <button class="btn primary block" type="submit" ${f.busy ? "disabled" : ""}>${esc(f.busy ? t("loading") : t("verify"))}</button>
+    </form>
+    <div class="stack" style="gap:4px;align-items:flex-start">
+      <button class="btn quiet" id="resend" data-act="resend" ${wait ? "disabled" : ""}>${esc(wait ? t("resend_in", { n: wait }) : t("resend"))}</button>
+      <button class="btn quiet" data-act="codeBack" style="color:var(--muted)">${esc(t("other_email"))}</button>
+    </div>
+    <p class="small muted">${esc(t("spam_hint"))}</p>
+  </div>`;
+}
+
+function authView() {
+  if (S.auth === "code") return codeView();
+  const m = S.auth, f = S.authF, reg = m === "register";
+  return `<div class="auth">
+    <div class="row"><button class="icon-btn" data-act="authBack" aria-label="${esc(t("back"))}">${icon("back")}</button><span class="grow"></span>${langSwitch()}</div>
+    <div><h1>${esc(t(reg ? "join" : "welcome_back"))}</h1><p class="muted" style="margin-top:6px;font-size:16px">${esc(t(reg ? "join_sub" : "back_sub"))}</p></div>
+    ${steps(false)}
+    ${seg([{ v: "register", label: t("sign_up") }, { v: "login", label: t("sign_in") }], reg ? 0 : 1, "authMode")}
+    <form id="auth-form" class="stack" style="gap:16px" novalidate>
+      ${reg ? `<div class="field"><label for="f-name">${esc(t("full_name"))}</label><div class="input-wrap">${icon("user")}<input class="input" id="f-name" autocomplete="name" placeholder="${esc(t("name_ph"))}" value="${esc(f.name)}"></div></div>` : ""}
+      <div class="field"><label for="f-email">${esc(t("email"))}</label><div class="input-wrap">${icon("mail")}<input class="input" id="f-email" type="email" autocomplete="email" placeholder="you@example.kz" value="${esc(f.email)}"></div></div>
+      <div class="field"><label for="f-pass">${esc(t("password"))}</label><div class="input-wrap">${icon("key")}<input class="input" id="f-pass" type="${f.show ? "text" : "password"}" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${esc(t("pass_ph"))}" value="${esc(f.pass)}"><button type="button" class="toggle" data-act="togglePw" aria-label="${esc(t(f.show ? "hide_pw" : "show_pw"))}">${icon(f.show ? "eyeoff" : "eye")}</button></div></div>
+      ${authErr(f)}
+      <button class="btn primary block" type="submit" ${f.busy ? "disabled" : ""}>${esc(f.busy ? t("loading") : t(reg ? "create_account" : "sign_in_btn"))}</button>
+    </form>
+    ${LIVE ? `<div class="notice info">${icon("lock")}<div>${esc(t("live_auth_note"))}</div></div>`
+      : `<div class="notice amber">${icon("info")}<div><b>${esc(t("demo_auth_t"))}</b> ${esc(t("demo_auth_b"))}<br><button class="linkbtn" data-act="fillDemo" style="margin-top:6px">${esc(t("use_demo", { e: DEMO_EMAIL }))}</button></div></div>`}
+  </div>`;
+}
+
+/* ================= views: shell ================= */
+const TABS = [
+  { v: "home", k: "t_home", icon: "home" },
+  { v: "mytasks", k: "t_mytasks", icon: "tasks" },
+  { v: "create", k: "t_create", icon: "plus" },
+  { v: "profile", k: "t_profile", icon: "user" },
+];
+function shell() {
+  const badge = S.role === "requester" ? pendingForMe() : 0;
+  const overlay = S.stack[S.stack.length - 1];
+  const view = overlay ? (overlay.type === "task" ? detailsView(overlay.id) : labView()) :
+    S.tab === "home" ? homeView() : S.tab === "mytasks" ? myTasksView() : S.tab === "create" ? createView() : profileView();
+  return `<header class="topbar"><div class="topbar-in">
+      <button class="logo" data-act="tab" data-v="home" aria-label="${esc(t("asar_home"))}">${logoMark(34)}<span class="logo-word">asar</span></button>
+      <nav class="nav" aria-label="Main">${TABS.map((x) => `<button data-act="tab" data-v="${x.v}" ${!overlay && S.tab === x.v ? 'aria-current="page"' : ""}>${icon(x.icon, "s")}${esc(t(x.k))}${x.v === "mytasks" && badge ? `<span class="nb num">${badge}</span>` : ""}</button>`).join("")}</nav>
+      <span class="grow"></span>
+      <div class="top-role">${roleSeg()}</div>
+      ${langSwitch()}
+      <button class="icon-btn bell" data-act="tab" data-v="mytasks" aria-label="${esc(t("activity"))}">${icon("bell")}${badge ? '<span class="dot-badge"></span>' : ""}</button>
+      <button class="me-btn" data-act="tab" data-v="profile" aria-label="${esc(t("t_profile"))}">${avatar(S.me.name, 40)}</button>
+    </div></header>
+    <main id="main">${view}</main>
+    ${overlay ? "" : `<nav class="bottom-nav" aria-label="Main">${TABS.map((x) => `<button class="${x.v === "create" ? "create" : ""}" data-act="tab" data-v="${x.v}" ${S.tab === x.v ? 'aria-current="page"' : ""}><span class="bi">${icon(x.icon)}${x.v === "mytasks" && badge ? `<span class="nb num">${badge}</span>` : ""}</span>${esc(t(x.k))}</button>`).join("")}</nav>`}
+    ${sheetView()}`;
+}
+
+/* ================= views: home ================= */
+function visibleTasks() {
+  const q = S.q.trim().toLowerCase();
+  const list = S.tasks.filter((x) => !x.done)
+    .filter((x) => !S.cat || x.cat === S.cat)
+    .filter((x) => !q || [L(x.title), L(x.desc), areaName(x.area), catLabel(x.cat)].some((s) => s.toLowerCase().includes(q)));
+  const mine = list.filter((x) => x.req.id === ME).sort((a, b) => b.createdAt - a.createdAt);
+  const others = list.filter((x) => x.req.id !== ME).sort((a, b) => (S.sort === "nearest" && a.dist != null && b.dist != null ? a.dist - b.dist : a.date - b.date));
+  return mine.concat(others);
+}
+function taskCard(x) {
+  const mine = x.req.id === ME, mya = appOf(x, ME), st = status(x);
+  let label = t("b_details"), act = "open";
+  if (x.done) label = t("b_summary");
+  else if (mine && S.role === "requester") label = pending(x) ? t("b_review", { n: pending(x) }) : t("b_manage");
+  else if (mya) label = t("b_view");
+  else if (st === "open") { label = t("b_apply"); act = "apply"; }
+  return `<article class="card elev task" data-act="open" data-id="${x.id}" role="button" tabindex="0" aria-label="${esc(L(x.title))}">
+    <div class="task-head">${catTile(x.cat, 42)}<div class="grow"><div class="cat-${x.cat} cat-label">${esc(catLabel(x.cat))}</div><div class="small faint">${esc(t("posted", { a: ago(x.createdAt) }))}</div></div>${mya && !x.done ? appPill(mya.status) : statusPill(st)}</div>
+    <h3 class="task-title">${esc(L(x.title))}</h3>
+    <div class="meta"><span>${icon("pin", "s")}${esc(areaName(x.area, true))}${x.dist != null ? ` · ${km(x.dist)}` : ""}</span><span>${icon("clock", "s")}${esc(friendly(x.date))}</span></div>
+    <div class="slots-row">${icon("group", "s")}<span class="num">${esc(t("vol_of", { a: accepted(x), n: x.need }))}</span><span class="grow"></span>${st === "open" ? `<span class="small muted num">${esc(t("spots_left", { n: spots(x) }))}</span>` : ""}</div>
+    ${progress(accepted(x), x.need)}
+    <div class="task-foot"><div class="grow who">${mine ? pill(t("your_request"), "p-primary") : `${avatar(x.req.name, 28)}<span>${esc(x.req.name)}</span>`}</div>
+      <button class="btn ${act === "apply" ? "primary" : "tonal"} sm" data-act="${act}" data-id="${x.id}">${esc(label)}</button></div>
+  </article>`;
+}
+function feedHTML() {
+  const list = visibleTasks();
+  return list.length ? list.map(taskCard).join("") : empty("search", t("nothing"), t("nothing_b"));
+}
+function homeView() {
+  const reqs = myRequests().filter((x) => !x.done).length;
+  const side = S.role === "requester"
+    ? `<div class="req-hero"><h2>${esc(t("need_hand"))}</h2><p>${esc(t("need_hand_b"))}</p>
+        <div class="row"><button class="btn sm" data-act="tab" data-v="create">${icon("plus", "s")}${esc(t("create_request"))}</button>
+        <button class="manage" data-act="tab" data-v="mytasks"><span class="num">${esc(t("active_review", { a: reqs, p: pendingForMe() }))}</span><br><b>${esc(t("manage_requests"))}</b></button></div></div>`
+    : LIVE
+      ? `<div><div class="impact num"><div><b>${S.tasks.filter((x) => !x.done).length}</b><span>${esc(t("imp_l1"))}</span></div><div><b>${new Set(S.tasks.flatMap((x) => x.apps.map((a) => a.v.id))).size}</b><span>${esc(t("imp_l2"))}</span></div><div><b>${S.tasks.filter((x) => x.done).length}</b><span>${esc(t("imp_l3"))}</span></div></div><p class="impact-cap">${esc(t("imp_cap_live"))}</p></div>`
+      : `<div><div class="impact num"><div><b>128</b><span>${esc(t("imp1"))}</span></div><div><b>42</b><span>${esc(t("imp2"))}</span></div><div><b>${esc(t("min25"))}</b><span>${esc(t("imp3"))}</span></div></div><p class="impact-cap">${esc(t("imp_cap"))}</p></div>`;
+  const [ha, hb] = S.role === "volunteer" ? ["hv_a", "hv_b"] : ["hr_a", "hr_b"];
+  return `<section class="home-hero">
+      <div class="stack" style="gap:18px">
+        <div class="greet">${avatar(S.me.name, 46)}<div><div class="name">${esc(t("hello", { n: first(S.me.name) }))}</div><div class="small muted row" style="gap:4px">${icon("pin", "xs")}${esc(t("city"))}</div></div></div>
+        <h1>${esc(t(ha))}<span class="accent">${esc(t(hb))}</span></h1>
+        <div class="mobile-only-role">${roleSeg()}</div>
+        <label class="search">${icon("search")}<input id="q" type="search" placeholder="${esc(t("search_ph"))}" value="${esc(S.q)}" aria-label="${esc(t("search_aria"))}"><button class="clear" data-act="clearQ" aria-label="${esc(t("clear_search"))}" ${S.q ? "" : "hidden"}>${icon("x", "s")}</button></label>
+      </div>
+      ${side}
+    </section>
+    <div class="hscroll" role="group" aria-label="${esc(t("categories"))}">
+      <button class="chip dark" data-act="cat" data-v="" aria-pressed="${!S.cat}">${icon("grid", "s")}${esc(t("all"))}</button>
+      ${Object.keys(CATS).map((k) => `<button class="chip dark" data-act="cat" data-v="${k}" aria-pressed="${S.cat === k}">${icon(CATS[k].icon, "s")}${esc(catShort(k))}</button>`).join("")}
+    </div>
+    <div class="section-head"><div class="grow"><h2>${esc(S.cat ? catLabel(S.cat) : t("nearby"))}</h2><div class="sub" id="count">${esc(t("in_almaty", { n: visibleTasks().length }))}</div></div>
+      <button class="btn quiet" data-act="sort">${esc(t(S.sort === "nearest" ? "sort_near" : "sort_soon"))}</button></div>
+    <div class="feed" id="feed">${feedHTML()}</div>`;
+}
+
+/* ================= views: details ================= */
+function detailActions(x) {
+  const mine = x.req.id === ME, mya = appOf(x, ME), st = status(x);
+  if (x.done) return `<button class="btn tonal" disabled>${icon("task")}${esc(t("done_thanks"))}</button>`;
+  if (mine && S.role === "requester") {
+    return accepted(x) ? `<button class="btn primary" data-act="openComplete" data-id="${x.id}">${icon("check")}${esc(t("mark_done"))}</button>`
+      : `<button class="btn primary" disabled>${esc(t(pending(x) ? "accept_first" : "waiting"))}</button>`;
+  }
+  if (S.role === "requester" && !mya) return `<button class="btn secondary" data-act="role" data-v="volunteer">${icon("hand")}${esc(t("to_volunteer"))}</button>`;
+  if (mya?.status === "pending") return `<div class="row" style="gap:12px">${appPill("pending")}<button class="btn secondary grow" data-act="withdraw" data-id="${x.id}">${esc(t("withdraw"))}</button></div>`;
+  if (mya?.status === "accepted") return mine ? `<button class="btn primary" data-act="role" data-v="requester">${esc(t("to_requester"))}</button>` : `<button class="btn tonal" disabled>${icon("check")}${esc(t("on_team"))}</button>`;
+  if (mya?.status === "rejected") return `<button class="btn secondary" disabled>${esc(t("not_selected"))}</button>`;
+  if (st !== "open") return `<button class="btn secondary" disabled>${esc(t("team_complete"))}</button>`;
+  return `<button class="btn primary" data-act="openApply" data-id="${x.id}">${icon("hand")}${esc(t("apply_help"))}</button>`;
+}
+function applicantHTML(x, a, readOnly) {
+  const canAccept = spots(x) > 0;
+  return `<div class="applicant">
+    <div class="row">${personLine(a.v, 40)}${a.status !== "pending" || readOnly ? appPill(a.status) : `<span class="small faint">${esc(ago(a.at))}</span>`}</div>
+    <p><q>${esc(L(a.msg))}</q></p>
+    ${a.status === "pending" && !readOnly ? `<div class="acts"><button class="btn secondary sm danger-text" data-act="reject" data-id="${x.id}" data-a="${a.id}">${icon("x", "s")}${esc(t("decline"))}</button><button class="btn primary sm" data-act="accept" data-id="${x.id}" data-a="${a.id}" ${canAccept ? "" : "disabled"}>${icon("check", "s")}${esc(t(canAccept ? "accept" : "team_full"))}</button></div>` : ""}
+  </div>`;
+}
+function detailsView(id) {
+  const x = task(id);
+  if (!x) return `<div class="back-row"><button class="icon-btn" data-act="back" aria-label="${esc(t("back"))}">${icon("back")}</button>${esc(t("req_details"))}</div>${empty("search", t("not_found"), t("not_found_b"))}`;
+  const mine = x.req.id === ME, mya = appOf(x, ME), a = analyze(L(x.title), L(x.desc));
+  const team = x.apps.filter((p) => p.status === "accepted").map((p) => p.v.name);
+  const facts = `<div class="card elev facts">
+      <div class="fact"><span class="fi">${icon("pin")}</span><div><small>${esc(t("area"))}</small><b>${esc(x.dist != null ? t("away", { a: areaName(x.area), k: km(x.dist) }) : areaName(x.area))}</b></div></div>
+      <div class="fact"><span class="fi">${icon("calendar")}</span><div><small>${esc(t("when"))}</small><b>${esc(friendly(x.date))} · ${esc(dur(x.dur))}</b></div></div>
+      <div class="fact"><span class="fi">${icon("group")}</span><div><small>${esc(t("slots"))}</small><b class="num">${esc(t("confirmed", { a: accepted(x), n: x.need }))}${status(x) === "open" ? esc(t("open_n", { s: spots(x) })) : ""}</b></div></div>
+      ${progress(accepted(x), x.need)}
+      ${team.length ? `<div class="row"><span class="av-stack">${team.slice(0, 4).map((n) => avatar(n, 28, true)).join("")}</span><span class="small muted">${esc(team.map(first).join(", "))}</span></div>` : ""}
+      <div class="desk-actions action-panel" style="margin-top:4px">${detailActions(x)}</div>
+    </div>`;
+  return `<div class="back-row"><button class="icon-btn" data-act="back" aria-label="${esc(t("back"))}">${icon("back")}</button>${esc(t("req_details"))}</div>
+  <div class="details">
+    <div class="main-col">
+      <div class="stack" style="gap:14px">
+        <div class="row" style="gap:12px">${catTile(x.cat, 52)}<div class="grow"><div class="cat-${x.cat} cat-label" style="font-size:14px">${esc(catLabel(x.cat))}</div><div class="small muted">${esc(t("posted", { a: ago(x.createdAt) }))}</div></div>${statusPill(status(x))}</div>
+        <h1>${esc(L(x.title))}</h1>
+        <div class="row">${diffPill(x.diff)}${pill(dur(x.dur), "p-neutral")}</div>
+      </div>
+      ${mine && S.role === "volunteer" && !x.done ? `<div class="notice info">${icon("info")}<div>${esc(t("own_notice"))}</div></div>` : ""}
+      <section><h2>${esc(t("about"))}</h2><p class="about">${esc(L(x.desc))}</p></section>
+      <section><h2>${esc(t("skills_h"))}</h2><div class="chips">${x.skills.map((s) => pill(skill(s), "p-neutral")).join("")}</div></section>
+      <section><h2>${esc(t("requested_by"))}</h2><div class="card">${personLine(x.req)}</div></section>
+      ${a ? `<section>${analysisHTML(a, { title: t("assist_check"), signals: false })}</section>` : ""}
+      ${mya ? `<section><h2>${esc(t("your_app"))}</h2>${applicantHTML(x, mya, true)}</section>` : ""}
+      ${mine ? `<section><div class="row" style="margin-bottom:10px;flex-wrap:wrap"><h2 class="grow" style="margin:0">${esc(t("applicants"))}</h2><span class="small muted num">${esc(t("app_counts", { p: pending(x), a: accepted(x), n: x.need }))}</span></div>
+        ${x.apps.length ? `<div class="list">${x.apps.map((p) => applicantHTML(x, p, S.role !== "requester" || x.done)).join("")}</div>
+          ${S.role !== "requester" && pending(x) && !x.done ? `<p class="small muted" style="margin-top:8px">${esc(t("switch_hint"))}</p>` : ""}`
+          : `<div class="card">${empty("hourglass", t("waiting"), t("waiting_b"))}</div>`}
+      </section>` : ""}
+      ${x.reviews.length ? `<section><h2>${esc(t("reviews"))}</h2><div class="list">${x.reviews.map((r) => reviewHTML(r)).join("")}</div></section>` : ""}
+    </div>
+    <aside class="side-col">${facts}</aside>
+  </div>
+  <div class="mobile-actions">${detailActions(x)}</div>
+  <div style="height:70px"></div>`;
+}
+
+/* ================= sheets ================= */
+function sheetView() {
+  const sh = S.sheet; if (!sh) return "";
+  const x = task(sh.id); if (!x) return "";
+  let body = "";
+  if (sh.type === "apply") {
+    body = `<h2 id="sheet-title">${esc(t("offer"))}</h2>
+      <div class="row" style="background:var(--soft);border-radius:18px;padding:12px;gap:12px">${catTile(x.cat, 40)}<div class="grow"><b style="font-size:14px">${esc(L(x.title))}</b><div class="small muted">${esc(friendly(x.date))} · ${esc(areaName(x.area))}</div></div></div>
+      <div class="field"><label for="apply-note">${esc(t("msg_to", { n: first(x.req.name) }))}</label><textarea class="input" id="apply-note" rows="3">${esc(sh.note)}</textarea><span class="help">${esc(t("msg_help"))}</span></div>
+      ${x.req.id === ME ? `<div class="notice info">${icon("info")}<div>${esc(t("own_apply"))}</div></div>` : ""}
+      <button class="btn primary block" data-act="sendApply">${icon("send")}${esc(t("send_app"))}</button>`;
+  } else {
+    body = `<h2 id="sheet-title">${esc(t("how_go"))}</h2>
+      <p class="muted" style="margin-top:-8px">${esc(t("how_go_b"))}</p>
+      ${sh.drafts.map((d, i) => `${i ? '<hr class="sep">' : ""}
+        ${personLine(d.v, 40)}
+        <div class="rate" role="group" aria-label="${esc(t("rating_for", { n: d.v.name }))}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="${n <= d.rating ? "on" : ""}" data-act="rate" data-i="${i}" data-v="${n}" aria-label="${esc(t("n_stars", { n }))}">${icon("star")}</button>`).join("")}</div>
+        <textarea class="input" id="rv-${i}" rows="2" aria-label="${esc(t("review_for", { n: d.v.name }))}">${esc(d.text)}</textarea>
+        <div><button type="button" class="chip info" data-act="tryClaim" data-i="${i}">${esc(t("try_claim"))}</button></div>
+        <div class="preview"><div class="row" style="margin-bottom:8px"><b class="grow small">${esc(t("live_check"))}</b>${aiBadge()}</div><div id="vp-${i}">${verificationHTML(verify(d.text, d.rating, sh.drafts.length))}</div></div>`).join("")}
+      <button class="btn primary block" data-act="completeTask">${icon("task")}${esc(t("complete_publish"))}</button>`;
+  }
+  return `<div class="sheet-wrap ${sh.fresh ? "anim" : ""}"><div class="backdrop" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div>${body}</div></div>`;
+}
+
+/* ================= views: create ================= */
+function aiSlotHTML() {
+  const d = S.draft, a = analyze(d.title, d.desc);
+  if (!a) return `<div class="ai-placeholder">${icon("sparkle")}<div><b style="color:var(--ink)">ASAR Assist</b> ${aiBadge()}<br>${esc(t("ai_ph"))}</div></div>`;
+  const applied = d.cat === a.cat && d.vols === a.vols && d.skills.join() === a.skills.join();
+  return analysisHTML(a, { footer: `<button class="btn tonal md block" data-act="useSuggest">${icon(applied ? "check" : "sparkle", "s")}${esc(t(applied ? "sugg_applied" : "use_sugg"))}</button>` });
+}
+const EXAMPLES = [
+  { label: ["Groceries for grandma", "Продукты для бабушки", "Әжеге азық-түлік"],
+    title: ["Groceries for my grandmother", "Продукты для моей бабушки", "Әжеме азық-түлік"],
+    desc: ["My grandmother is 79 and lives alone on the 5th floor with no elevator. Could someone bring groceries and medicine from the pharmacy this week?", "Моей бабушке 79 лет, она живёт одна на 5 этаже без лифта. Может кто-нибудь принести продукты и лекарства из аптеки на этой неделе?", "Әжем 79 жаста, лифт жоқ 5-қабатта жалғыз тұрады. Осы аптада біреу азық-түлік пен дәріханадан дәрі әкеліп бере ала ма?"] },
+  { label: ["Courtyard cleanup", "Уборка двора", "Аулада тазалық"],
+    title: ["Courtyard cleanup and tree planting", "Уборка двора и посадка деревьев", "Ауланы тазалау және ағаш отырғызу"],
+    desc: ["Our courtyard needs a spring cleanup: collect litter, sort plastic for recycling and plant a few trees with the kids from our building.", "Нашему двору нужен субботник: собрать мусор, отсортировать пластик на переработку и посадить несколько деревьев с детьми из нашего дома.", "Ауламызға сенбілік керек: қоқыс жинау, пластикті қайта өңдеуге сұрыптау және үйдегі балалармен бірге бірнеше ағаш отырғызу."] },
+  { label: ["Move a sofa", "Перенести диван", "Диван көтеру"],
+    title: ["Help carry a heavy sofa", "Помочь перенести тяжёлый диван", "Ауыр диванды көтеруге көмек"],
+    desc: ["Moving a heavy sofa and a wardrobe from the 4th floor to a truck. No lift in the building.", "Переносим тяжёлый диван и шкаф с 4 этажа в грузовик. Лифта в доме нет.", "Ауыр диван мен шкафты 4-қабаттан жүк көлігіне түсіреміз. Үйде лифт жоқ."] },
+];
+function createErrors() {
+  const d = S.draft;
+  return { title: d.title.trim().length < 4, desc: d.desc.trim().length < 15, cat: !d.cat };
+}
+function createView() {
+  const d = S.draft, e = d.errors ? createErrors() : {};
+  const today = new Date();
+  const days = Array.from({ length: 14 }, (_, i) => { const x = new Date(today); x.setDate(today.getDate() + i); return x; });
+  return `<div class="create">
+    <div class="top">
+      <div><h1>${esc(t("new_request"))}</h1><p class="sub-h">${esc(t("new_request_b"))}</p></div>
+      <div><div class="small muted" style="margin-bottom:8px">${esc(t("quick_start"))}</div><div class="hscroll">${EXAMPLES.map((x, i) => `<button class="chip info" data-act="example" data-i="${i}">${esc(L(x.label))}</button>`).join("")}</div></div>
+      <div class="field"><label for="d-title">${esc(t("title"))}</label><input class="input ${e.title ? "err" : ""}" id="d-title" placeholder="${esc(t("title_ph"))}" value="${esc(d.title)}">${e.title ? `<span class="help err">${esc(t("title_err"))}</span>` : ""}</div>
+      <div class="field"><label for="d-desc">${esc(t("description"))}</label><textarea class="input ${e.desc ? "err" : ""}" id="d-desc" rows="4" placeholder="${esc(t("desc_ph"))}">${esc(d.desc)}</textarea>${e.desc ? `<span class="help err">${esc(t("desc_err"))}</span>` : ""}</div>
+    </div>
+    <aside class="ai" id="ai-slot">${aiSlotHTML()}</aside>
+    <div class="rest">
+      <div><div class="fs-title">${esc(t("category"))}${e.cat ? `<span class="help err">${esc(t("cat_err"))}</span>` : ""}</div><div class="chips">${Object.keys(CATS).map((k) => `<button class="chip" data-act="dCat" data-v="${k}" aria-pressed="${d.cat === k}">${icon(CATS[k].icon, "s")}${esc(catShort(k))}</button>`).join("")}</div></div>
+      <div><div class="fs-title">${esc(t("area_in"))}</div><div class="chips">${Object.keys(AREAS).map((k) => `<button class="chip" data-act="dArea" data-v="${k}" aria-pressed="${d.area === k}">${esc(areaName(k, true))}</button>`).join("")}</div></div>
+      <div><div class="fs-title">${esc(t("date_time"))}</div>
+        <div class="days">${days.map((x, i) => `<button class="day" data-act="dDay" data-v="${i}" aria-pressed="${d.day === i}"><small>${esc(i === 0 ? t("today") : x.toLocaleDateString(locale(), { weekday: "short" }))}</small><b class="num">${x.getDate()}</b><small>${esc(x.toLocaleDateString(locale(), { month: "short" }))}</small></button>`).join("")}</div>
+        <div class="chips" style="margin-top:10px">${[9, 11, 14, 16, 18, 20].map((h) => `<button class="chip num" data-act="dHour" data-v="${h}" aria-pressed="${d.hour === h}">${String(h).padStart(2, "0")}:00</button>`).join("")}</div></div>
+      <div><div class="fs-title">${esc(t("vols_needed"))}</div>
+        <div class="stepper"><button data-act="step" data-v="-1" aria-label="${esc(t("fewer"))}" ${d.vols <= 1 ? "disabled" : ""}>${icon("minus")}</button><div class="v"><b class="num">${d.vols}</b><small>${esc(t("vol_word", { n: d.vols }))}</small></div><button data-act="step" data-v="1" aria-label="${esc(t("more"))}" ${d.vols >= 30 ? "disabled" : ""}>${icon("plus")}</button></div></div>
+      <div style="max-width:420px"><button class="btn primary block" data-act="publish">${icon("publish")}${esc(t("publish"))}</button></div>
+    </div>
+  </div>`;
+}
+
+/* ================= views: my tasks ================= */
+function myTasksView() {
+  const tab = S.myTab ?? (S.role === "requester" ? 0 : 1);
+  const reqs = myRequests(), apps = myApps();
+  const pend = pendingForMe(), active = reqs.filter((x) => !x.done).length, upcoming = apps.filter((x) => appOf(x, ME).status === "accepted" && !x.done).length;
+  const steps = (a, done) => {
+    const rej = a.status === "rejected", reached = done ? 4 : a.status === "pending" ? 1 : 3;
+    return `<div class="timeline">${["tl_applied", "tl_reviewed", rej ? "tl_declined" : "tl_confirmed", "tl_completed"].map((k, i) => `<div class="${rej && i === 2 ? "bad" : i < reached ? "on" : ""}"><i></i><span>${esc(t(k))}</span></div>`).join("")}</div>`;
+  };
+  const head = (x, right) => `<div class="sum-head">${catTile(x.cat, 42)}<div class="grow"><div class="t">${esc(L(x.title))}</div><div class="small muted">${esc(friendly(x.date))} · ${esc(areaName(x.area, true))}</div></div>${right}${icon("chev", "s")}</div>`;
+  let list;
+  if (tab === 0) {
+    list = reqs.length ? reqs.map((x) => {
+      const pa = x.apps.filter((a) => a.status === "pending");
+      return `<article class="card elev stack" style="gap:10px" data-act="open" data-id="${x.id}" role="button" tabindex="0">
+        ${head(x, statusPill(status(x)))}
+        <div class="row small"><b class="num grow" style="font-weight:600">${esc(t("vol_of", { a: accepted(x), n: x.need }))}</b><span class="${pa.length ? "accent" : "faint"}">${esc(pa.length ? t("new_apps", { n: pa.length }) : t("no_new_apps"))}</span></div>
+        ${progress(accepted(x), x.need)}
+        ${pa.length && !x.done ? (S.role === "requester" ? `<div class="list">${pa.slice(0, 2).map((a) => applicantHTML(x, a, false)).join("")}</div>` : `<button class="btn tonal md block" data-act="role" data-v="requester">${esc(t("switch_review"))}</button>`) : ""}
+        ${!x.done && accepted(x) && !pa.length && S.role === "requester" ? `<button class="btn tonal md block" data-act="open" data-id="${x.id}">${esc(t("open_complete"))}</button>` : ""}
+      </article>`;
+    }).join("") : empty("inbox", t("no_reqs"), t("no_reqs_b"), `<button class="btn primary sm" data-act="tab" data-v="create">${icon("plus", "s")}${esc(t("create_request"))}</button>`);
+  } else {
+    list = apps.length ? apps.map((x) => { const a = appOf(x, ME); return `<article class="card elev stack" style="gap:12px" data-act="open" data-id="${x.id}" role="button" tabindex="0">${head(x, x.done ? statusPill("done") : appPill(a.status))}${steps(a, x.done)}</article>`; }).join("")
+      : empty("search", t("no_apps"), t("no_apps_b"), `<button class="btn primary sm" data-act="tab" data-v="home">${esc(t("browse"))}</button>`);
+  }
+  return `<div class="stack" style="gap:20px">
+    <div><h1 class="page-h1">${esc(t("my_tasks"))}</h1><p class="sub-h">${esc(t("my_tasks_b"))}</p></div>
+    <div class="tiles num" style="max-width:640px"><div class="tile ${pend ? "hl" : ""}"><b>${pend}</b><span>${esc(t("to_review"))}</span></div><div class="tile"><b>${active}</b><span>${esc(t("active_reqs"))}</span></div><div class="tile"><b>${upcoming}</b><span>${esc(t("upcoming"))}</span></div></div>
+    <div style="max-width:640px">${seg([{ v: 0, label: t("my_requests"), icon: "megaphone" }, { v: 1, label: t("applications"), icon: "hand" }], tab, "myTab")}</div>
+    <div class="mt-list">${list}</div>
+  </div>`;
+}
+
+/* ================= views: profile ================= */
+/** Completed helps, newest first: demo baseline + this session, or real ones from the database. */
+function historyList() {
+  if (!LIVE) return S.history.slice().reverse().concat(HISTORY);
+  return myReviews().filter(([x]) => x.done).sort(([a], [b]) => b.date - a.date)
+    .map(([x, v]) => ({ title: x.title, cat: x.cat, when: x.date.toLocaleDateString(locale(), { day: "numeric", month: "long" }), h: parseFloat(x.dur.h) || 2, r: v.rating, by: x.req.name }));
+}
+function achievements(hist) {
+  const n = hist.length, of = (c) => hist.filter((h) => h.cat === c), by = (list, i = 0) => list[i]?.by || null;
+  const list = [
+    ["trophy", ["First helping hand", "Первая помощь", "Алғашқы көмек қолы"], ["Completed your first ASAR task", "Выполнено первое задание в ASAR", "ASAR-дағы алғашқы тапсырма орындалды"], n >= 1, by(hist, n - 1)],
+    ["leaf", ["Green Almaty", "Зелёный Алматы", "Жасыл Алматы"], ["Joined 2 eco initiatives", "Участие в 2 эко-инициативах", "2 эко-бастамаға қатысты"], of("eco").length >= 2, by(of("eco"), 1)],
+    ["elderly", ["Respect for elders", "Уважение к старшим", "Үлкенге құрмет"], ["Helped an elderly neighbour", "Помощь пожилому соседу", "Қарт көршіге көмектесті"], of("elderly").length >= 1, by(of("elderly"))],
+    ["medal", ["Ten good deeds", "Десять добрых дел", "Он игі іс"], ["Complete 10 tasks", "Выполните 10 задач", "10 тапсырма орындаңыз"], n >= 10, by(hist)],
+    ["leaf", ["Eco champion", "Эко-чемпион", "Эко чемпион"], ["Join 3 eco initiatives", "Примите участие в 3 эко-инициативах", "3 эко-бастамаға қатысыңыз"], of("eco").length >= 3, by(of("eco"), 2)],
+  ];
+  if (!LIVE) list.splice(3, 0, ["sparkle", ["Asar in action", "Асар в действии", "Асар іс жүзінде"], ["Complete a task during this demo", "Выполните задачу в этом демо", "Осы демода тапсырма орындаңыз"], S.history.length > 0, S.history.length ? t("asar_demo") : null]);
+  return list.map(([ic, ti, d, earned, b]) => [ic, ti, d, earned, earned ? b : null]);
+}
+function profileView() {
+  const r = allRatings(), avg = r.length ? (r.reduce((a, b) => a + b, 0) / r.length).toFixed(1) : "—";
+  const hist = historyList();
+  const reviews = myReviews();
+  return `<div class="profile">
+    <div class="ident"><div class="halo">${avatar(S.me.name, 94, true)}<span class="vb">${icon("check", "xs")}</span></div>
+      <h1>${esc(S.me.name)}</h1><div class="muted">${esc(S.session.email)}</div>
+      <div class="row" style="margin-top:8px;flex-wrap:wrap;justify-content:center">${pill(t("member_since", { y: S.me.since }), "p-primary", { icon: "hand" })}${LIVE ? pill(t("email_verified"), "p-primary", { icon: "check" }) : demoBadge(t(S.session.demo ? "demo_account" : "local_account"))}</div></div>
+    <div>${roleSeg()}</div>
+    <section class="stack" style="gap:12px">
+      <div class="row"><h2 class="grow" style="font-size:20px">${esc(t("impact"))}</h2>${LIVE ? "" : demoBadge()}</div>
+      <div class="tiles num">
+        <div class="tile stat"><span style="color:var(--sand)">${icon("star")}</span><b>${avg}</b><span>${esc(t("n_reviews", { n: r.length }))}</span></div>
+        <div class="tile stat">${icon("trophy")}<b>${hist.length}</b><span>${esc(t("tasks_done"))}</span></div>
+        <div class="tile stat">${icon("hand")}<b>${esc(t("h_unit", { n: Math.round(hist.reduce((a, h) => a + h.h, 0)) }))}</b><span>${esc(t("hours_given"))}</span></div>
+      </div>
+    </section>
+    <section class="stack" style="gap:12px">
+      <div><h2 style="font-size:20px">${esc(t("achievements"))}</h2><p class="small muted">${esc(LIVE ? t("achievements_b").replace(/ \((demo|демо)\)$/, "") : t("achievements_b"))}</p></div>
+      <div class="ach-grid">${achievements(hist).map(([ic, ti, d, earned, by]) => `<div class="card ach ${earned ? "" : "locked"}"><span class="ai-ic">${icon(earned ? ic : "lock")}</span><b>${esc(L(ti))}</b><span class="small muted">${esc(L(d))}</span>${by ? `<span class="by">${icon("verified", "xs")}${esc(t("by", { n: by }))}</span>` : ""}</div>`).join("")}</div>
+    </section>
+    <div class="card lab-card" data-act="openLab" role="button" tabindex="0"><span class="li">${icon("sparkle", "l")}</span><div class="grow"><b style="font-size:16px">${esc(t("lab"))}</b><div class="small muted">${esc(t("lab_b"))}</div><div style="margin-top:6px">${aiBadge()}</div></div><span style="color:var(--info)">${icon("chev")}</span></div>
+    ${reviews.length ? `<section class="stack" style="gap:12px"><div><h2 style="font-size:20px">${esc(t("reviews_about"))}</h2><p class="small muted">${esc(t("n_published", { n: reviews.length }))}</p></div><div class="list">${reviews.map(([x, v]) => `<div data-act="open" data-id="${x.id}" role="button" tabindex="0" style="cursor:pointer">${reviewHTML(v, L(x.title))}</div>`).join("")}</div></section>` : ""}
+    <section class="stack" style="gap:12px"><div><h2 style="font-size:20px">${esc(t("history"))}</h2><p class="small muted">${esc(t("history_b"))}</p></div>
+      <div class="card hist">${hist.map((h) => `<div class="hr">${catTile(h.cat, 40)}<div class="grow"><div class="t">${esc(L(h.title))}</div><div class="small muted num">${esc(L(h.when))} · ${esc(t("h_unit", { n: h.h }))}</div></div>${h.r ? stars(h.r) : ""}</div>`).join("")}</div></section>
+    <p class="small faint" style="text-align:center">${esc(t(LIVE ? "footnote_live" : "footnote"))}</p>
+    <button class="btn secondary block danger-text" data-act="logout">${icon("logout")}${esc(t("sign_out"))}</button>
+  </div>`;
+}
+
+/* ================= views: AI lab ================= */
+const TASK_SAMPLES = [
+  ["Need 3 people to carry a piano to the 4th floor, no elevator", "Нужны 3 человека, чтобы поднять пианино на 4 этаж, лифта нет", "Пианиноны 4-қабатқа көтеруге 3 адам керек, лифт жоқ"],
+  ["Teach my grandfather to use video calls on his smartphone", "Научить дедушку видеозвонкам на смартфоне", "Атама смартфонда бейне қоңырау шалуды үйрету"],
+  ["Saturday cleanup of plastic litter around Sairan lake", "Субботник: убрать пластиковый мусор у озера Сайран", "Сенбілік: Сайран көлінің жағасындағы пластик қоқысты жинау"],
+  ["Walk shelter dogs and help clean the kennels", "Выгулять собак из приюта и помочь убрать вольеры", "Баспанадағы иттерді серуендету және торларын тазалауға көмектесу"],
+];
+const labTask = () => S.lab.task ?? L(TASK_SAMPLES[0]);
+const labReview = () => S.lab.review ?? L(CLAIMS[0]);
+function labTaskResult() { const a = analyze("", labTask()); return a ? analysisHTML(a, { title: t("analysis") }) : ""; }
+function labReviewResult() { return `<div class="card"><b style="font-size:16px;display:block;margin-bottom:10px">${esc(t("result"))}</b>${verificationHTML(verify(labReview(), S.lab.rating, null))}</div>`; }
+function labView() {
+  return `<div class="back-row"><button class="icon-btn" data-act="back" aria-label="${esc(t("back"))}">${icon("back")}</button><span class="grow">${esc(t("lab"))}</span>${aiBadge()}</div>
+  <div class="lab">
+    <div class="notice info">${icon("info")}<div><b>${esc(t("lab_note_t"))}</b> ${esc(t("lab_note_b"))}</div></div>
+    <section><h2>${esc(t("analyzer"))}</h2><p class="muted">${esc(t("analyzer_b"))}</p>
+      <div class="hscroll">${TASK_SAMPLES.map((s, i) => `<button class="sample" data-act="labTask" data-i="${i}" title="${esc(L(s))}">${esc(L(s))}</button>`).join("")}</div>
+      <textarea class="input" id="lab-task" rows="3" aria-label="${esc(t("task_desc"))}">${esc(labTask())}</textarea>
+      <div id="lab-task-out">${labTaskResult()}</div></section>
+    <section><h2>${esc(t("verification"))}</h2><p class="muted">${esc(t("verification_b"))}</p>
+      <div class="hscroll">${CLAIMS.map((s, i) => `<button class="sample" data-act="labClaim" data-i="${i}" title="${esc(L(s))}">${esc(L(s))}</button>`).join("")}</div>
+      <textarea class="input" id="lab-review" rows="3" aria-label="${esc(t("review_text"))}">${esc(labReview())}</textarea>
+      <div class="row"><b class="small" style="min-width:56px">${esc(t("rating"))}</b><div class="rate">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="${n <= S.lab.rating ? "on" : ""}" data-act="labRate" data-v="${n}" aria-label="${esc(t("n_stars", { n }))}">${icon("star")}</button>`).join("")}</div></div>
+      <div id="lab-review-out">${labReviewResult()}</div></section>
+  </div>`;
+}
+
+/* ================= render ================= */
+function render() {
+  document.documentElement.lang = lang;
+  $("#app").innerHTML = S.booting ? `<div class="boot">${logoMark(48)}<p class="muted">${esc(t("loading"))}</p></div>`
+    : S.session ? shell() : S.auth ? authView() : welcomeView();
+  if (S.sheet) S.sheet.fresh = false; // slide-in plays only when a sheet first opens
+}
+function go(fn) { fn(); render(); }
+function push(entry) { if (!S.stack.length) S.scroll[S.tab] = window.scrollY; S.stack.push(entry); render(); window.scrollTo(0, 0); }
+function refreshPreview(i) {
+  const d = S.sheet.drafts[i];
+  $("#vp-" + i).innerHTML = verificationHTML(verify(d.text, d.rating, S.sheet.drafts.length));
+}
+
+/** Runs a data change once at a time and reports failures instead of losing them. */
+let saving = false;
+async function save(fn) {
+  if (saving) return; saving = true; document.body.classList.add("busy");
+  try { await fn(); } catch (e) { toast(t("save_err", { m: errText(e) })); try { if (LIVE) { await loadAll(); render(); } } catch (e2) { /* offline */ } }
+  finally { saving = false; document.body.classList.remove("busy"); }
+}
+
+/* ================= actions ================= */
+const A = {
+  lang: (el) => {
+    const v = el.dataset.v; if (v === lang) return;
+    // Keep untouched demo texts in sync with the new language.
+    if (S.sheet?.type === "apply" && S.sheet.note === t("default_note")) S.sheet.note = D.default_note[LI[v]];
+    if (S.sheet?.type === "complete") S.sheet.drafts.forEach((d) => { if (d.text === t("default_review")) d.text = D.default_review[LI[v]]; });
+    lang = v;
+    try { localStorage.setItem("asar.lang", v); } catch (e) { /* storage unavailable */ }
+    render(); toast(t("toast_lang"));
+  },
+  demo: () => startSession(S.accounts[DEMO_EMAIL]),
+  goAuth: (el) => go(() => { S.auth = el.dataset.v; S.authF.err = ""; S.bootErr = null; }),
+  authBack: () => go(() => { S.auth = null; }),
+  authMode: (el) => go(() => { S.auth = el.dataset.v; S.authF.err = ""; }),
+  togglePw: () => go(() => { S.authF.show = !S.authF.show; }),
+  fillDemo: () => go(() => { S.auth = "login"; Object.assign(S.authF, { email: DEMO_EMAIL, pass: DEMO_PASS, err: "" }); }),
+  logout: async () => {
+    await auth.logout().catch(() => {});
+    if (LIVE) { ME = "me"; S.tasks = []; }
+    S.session = null; S.auth = null; S.stack = []; S.sheet = null; render(); window.scrollTo(0, 0);
+  },
+  codeBack: () => go(() => { S.auth = S.authF.pending?.mode === "signup" ? "register" : "login"; Object.assign(S.authF, { err: "", code: "", pending: null }); }),
+  resend: async () => {
+    const f = S.authF; if (!f.pending || f.resendAt > Date.now()) return;
+    try { await auth.resend(f.pending); f.resendAt = Date.now() + 60000; f.err = ""; render(); toast(t("code_resent")); }
+    catch (e) { [f.err, f.errMsg] = errKey(e); render(); }
+  },
+
+  tab: (el) => { S.stack = []; S.sheet = null; const v = el.dataset.v; if (v === "mytasks") S.myTab = null; S.tab = v; render(); window.scrollTo(0, v === "home" ? (S.scroll.home || 0) : 0); },
+  role: (el) => { const r = el.dataset.v; if (r === S.role) return; S.role = r; S.myTab = null; render(); toast(t(r === "volunteer" ? "toast_vol" : "toast_req")); },
+  cat: (el) => go(() => { S.cat = el.dataset.v || null; }),
+  sort: () => go(() => { S.sort = S.sort === "nearest" ? "soonest" : "nearest"; }),
+  clearQ: (el, e) => { e.preventDefault(); S.q = ""; render(); $("#q")?.focus(); },
+  open: (el) => push({ type: "task", id: el.dataset.id }),
+  apply: (el) => { push({ type: "task", id: el.dataset.id }); A.openApply(el); },
+  back: () => { S.stack.pop(); S.sheet = null; render(); window.scrollTo(0, S.stack.length ? 0 : (S.scroll[S.tab] || 0)); },
+  myTab: (el) => go(() => { S.myTab = +el.dataset.v; }),
+  openLab: () => push({ type: "lab" }),
+
+  openApply: (el) => { const x = task(el.dataset.id); if (!x || appOf(x, ME) || status(x) !== "open" || S.role !== "volunteer") return; S.sheet = { fresh: true, type: "apply", id: x.id, note: t("default_note") }; render(); setTimeout(() => $("#apply-note")?.focus(), 50); },
+  closeSheet: () => go(() => { S.sheet = null; }),
+  sendApply: () => save(async () => {
+    const x = task(S.sheet.id); const note = S.sheet.note.trim() || t("glad");
+    await api.apply(x.id, note);
+    S.sheet = null; render(); toast(t("toast_sent", { n: first(x.req.name) }));
+  }),
+  withdraw: (el) => save(async () => { await api.withdraw(el.dataset.id); render(); toast(t("toast_withdrawn")); }),
+  accept: (el, e) => {
+    e.stopPropagation();
+    save(async () => {
+      const x = task(el.dataset.id), a = x?.apps.find((p) => p.id === el.dataset.a);
+      if (!a || spots(x) === 0) return;
+      await api.decide(x.id, a.id, "accepted"); render(); toast(t("toast_team", { n: first(a.v.name) }));
+    });
+  },
+  reject: (el, e) => { e.stopPropagation(); save(async () => { await api.decide(el.dataset.id, el.dataset.a, "rejected"); render(); toast(t("toast_declined")); }); },
+  openComplete: (el) => {
+    const x = task(el.dataset.id);
+    S.sheet = { fresh: true, type: "complete", id: x.id, drafts: x.apps.filter((a) => a.status === "accepted").map((a) => ({ v: a.v, rating: 5, text: t("default_review") })) };
+    render();
+  },
+  rate: (el) => {
+    const i = +el.dataset.i, v = +el.dataset.v; S.sheet.drafts[i].rating = v;
+    el.parentElement.querySelectorAll("button").forEach((b) => b.classList.toggle("on", +b.dataset.v <= v));
+    refreshPreview(i);
+  },
+  tryClaim: (el) => { const i = +el.dataset.i, c = L(CLAIMS[0]); S.sheet.drafts[i].text = c; $("#rv-" + i).value = c; refreshPreview(i); },
+  completeTask: () => save(async () => {
+    const x = task(S.sheet.id), team = S.sheet.drafts.length;
+    const reviews = S.sheet.drafts.map((d) => ({ vid: d.v.id, vname: d.v.name, author: x.req.name, rating: d.rating, text: d.text.trim(), ver: verify(d.text, d.rating, team) }));
+    await api.complete(x.id, reviews);
+    const mine = reviews.find((v) => v.vid === ME);
+    if (mine && !LIVE) { const h = { easy: 1, moderate: 3, demanding: 4 }[x.diff]; S.ratings.push(mine.rating); S.hours += h; S.history.push({ title: x.title, cat: x.cat, when: D.today, h, r: mine.rating, by: x.req.name }); }
+    S.sheet = null; render(); toast(t("toast_done"));
+  }),
+
+  example: (el) => { const x = EXAMPLES[+el.dataset.i]; S.draft.title = L(x.title); S.draft.desc = L(x.desc); render(); },
+  useSuggest: () => { const a = analyze(S.draft.title, S.draft.desc); if (!a) return; Object.assign(S.draft, { cat: a.cat, vols: a.vols, skills: a.skills, diff: a.diff }); render(); },
+  dCat: (el) => go(() => { S.draft.cat = el.dataset.v; }),
+  dArea: (el) => go(() => { S.draft.area = el.dataset.v; }),
+  dDay: (el) => go(() => { S.draft.day = +el.dataset.v; }),
+  dHour: (el) => go(() => { S.draft.hour = +el.dataset.v; }),
+  step: (el) => go(() => { S.draft.vols = Math.min(30, Math.max(1, S.draft.vols + +el.dataset.v)); }),
+  publish: () => {
+    const d = S.draft, err = createErrors();
+    if (err.title || err.desc || err.cat) { d.errors = true; render(); toast(t("fill_fields")); return; }
+    const a = analyze(d.title, d.desc); const date = new Date(); date.setDate(date.getDate() + d.day); date.setHours(d.hour, 0, 0, 0);
+    save(async () => {
+      await api.createTask({ title: d.title.trim(), desc: d.desc.trim(), cat: d.cat, area: d.area, date, dur: { easy: { h: 1, ap: true }, moderate: { h: "2–3", ap: false }, demanding: { h: 4, ap: true } }[d.diff], need: d.vols, skills: d.skills.length ? d.skills : a?.skills || ["kindness"], diff: d.diff });
+      S.draft = newDraft(); S.role = "requester"; S.tab = "home"; S.cat = null; S.q = ""; S.scroll.home = 0;
+      render(); window.scrollTo(0, 0); toast(t("toast_pub"));
+    });
+  },
+
+  labTask: (el) => { S.lab.task = L(TASK_SAMPLES[+el.dataset.i]); render(); },
+  labClaim: (el) => { S.lab.review = L(CLAIMS[+el.dataset.i]); render(); },
+  labRate: (el) => {
+    const v = +el.dataset.v; S.lab.rating = v;
+    el.parentElement.querySelectorAll("button").forEach((b) => b.classList.toggle("on", +b.dataset.v <= v));
+    $("#lab-review-out").innerHTML = labReviewResult();
+  },
+};
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el || el.disabled) return;
+  const fn = A[el.dataset.act];
+  if (fn) { if (el.tagName === "BUTTON" && el.type !== "submit") e.preventDefault(); fn(el, e); }
+});
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); e.target.click(); }
+  if (e.key === "Escape" && S.sheet) A.closeSheet();
+});
+document.addEventListener("submit", async (e) => {
+  const id = e.target.id;
+  if (id !== "auth-form" && id !== "code-form") return;
+  e.preventDefault();
+  const f = S.authF; if (f.busy) return;
+  const fail = (err) => { [f.err, f.errMsg] = errKey(err); f.busy = false; render(); };
+  if (id === "code-form") {
+    const code = f.code.replace(/\D/g, "");
+    if (code.length < 6) { f.err = "e_code"; return render(); }
+    f.busy = true; f.err = ""; render();
+    try { await auth.verify(f.pending, code); } catch (err) { fail(err); }
+    return;
+  }
+  const email = f.email.trim().toLowerCase(), reg = S.auth === "register";
+  f.err = reg && !f.name.trim() ? "e_name" : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? "e_email" : f.pass.length < 6 ? "e_pass" : "";
+  if (f.err) return render();
+  f.busy = true; render();
+  try {
+    const pending = reg ? await auth.register(f.name.trim(), email, f.pass) : await auth.login(email, f.pass);
+    Object.assign(f, { pending, busy: false, code: "", pass: "", err: pending.err || "", resendAt: Date.now() + 60000 });
+    S.auth = "code"; render(); setTimeout(() => $("#f-code")?.focus(), 50);
+  } catch (err) { fail(err); }
+});
+document.addEventListener("input", (e) => {
+  const el = e.target, v = el.value;
+  switch (el.id) {
+    case "f-name": S.authF.name = v; break;
+    case "f-email": S.authF.email = v; break;
+    case "f-pass": S.authF.pass = v; break;
+    case "f-code": S.authF.code = v; break;
+    case "q": S.q = v; $("#feed").innerHTML = feedHTML(); $("#count").textContent = t("in_almaty", { n: visibleTasks().length }); el.parentElement.querySelector(".clear").hidden = !v; break;
+    case "d-title": S.draft.title = v; $("#ai-slot").innerHTML = aiSlotHTML(); break;
+    case "d-desc": S.draft.desc = v; $("#ai-slot").innerHTML = aiSlotHTML(); break;
+    case "apply-note": S.sheet.note = v; break;
+    case "lab-task": S.lab.task = v; $("#lab-task-out").innerHTML = labTaskResult(); break;
+    case "lab-review": S.lab.review = v; $("#lab-review-out").innerHTML = labReviewResult(); break;
+    default: {
+      const m = el.id.match(/^rv-(\d+)$/);
+      if (m && S.sheet) { S.sheet.drafts[+m[1]].text = v; refreshPreview(+m[1]); }
+    }
+  }
+});
+
+render();
+if (LIVE) boot();
+// Resend countdown on the code screen.
+setInterval(() => {
+  const b = document.getElementById("resend"); if (!b || S.auth !== "code") return;
+  const wait = Math.max(0, Math.ceil((S.authF.resendAt - Date.now()) / 1000));
+  b.disabled = wait > 0; b.textContent = wait ? t("resend_in", { n: wait }) : t("resend");
+}, 1000);
+// Pick up other people's changes when the tab regains focus.
+window.addEventListener("focus", async () => {
+  if (!LIVE || !S.session || S.sheet || document.activeElement?.matches("input, textarea")) return;
+  try { await loadAll(); render(); } catch (e) { /* offline: keep what we have */ }
+});
+})();
+</script>
+</body>
+</html>
