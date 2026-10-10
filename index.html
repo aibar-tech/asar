@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ASAR</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Crect%20width%3D%2240%22%20height%3D%2240%22%20rx%3D%2211%22%20fill%3D%22%231F5FD6%22/%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20fill-rule%3D%22evenodd%22%20d%3D%22M20%207%2033.5%2032.5H6.5Z%20M20%2017.5%2024.3%2025.5H15.7Z%20M20%2027.6%2023.2%2032.6H16.8Z%22/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2216%22%20fill%3D%22%232864E8%22/%3E%3Cpath%20d%3D%22M12%2047%2026%2018Q29%2012%2034%2016L23%2047Z%22%20fill%3D%22%23FFF%22/%3E%3Cpath%20d%3D%22M33%2016Q36%2016%2038%2021L52%2047H40L29%2024Z%22%20fill%3D%22%23DCEAFE%22/%3E%3Cpath%20d%3D%22M22%2035Q32%2043%2043%2034L47%2042Q32%2052%2018%2043Z%22%20fill%3D%22%23BDE8D7%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
@@ -845,7 +845,7 @@ const P = {
   minus: '<path d="M5 12h14"/>',
 };
 const icon = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ""}</svg>`;
-const logoMark = (s = 38) => `<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#1F5FD6"/><path fill="#FFFFFF" fill-rule="evenodd" d="M20 7 33.5 32.5H6.5Z M20 17.5 24.3 25.5H15.7Z M20 27.6 23.2 32.6H16.8Z"/></svg>`;
+const logoMark = (s = 38) => `<svg width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#2864E8"/><path d="M12 47 26 18Q29 12 34 16L23 47Z" fill="#FFF"/><path d="M33 16Q36 16 38 21L52 47H40L29 24Z" fill="#DCEAFE"/><path d="M22 35Q32 43 43 34L47 42Q32 52 18 43Z" fill="#BDE8D7"/></svg>`;
 
 /* ================= helpers ================= */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
