@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="asar_background">#FAFAF7</color>
+    <color name="asar_primary">#246B50</color>
+    <color name="asar_icon_background">#246B50</color>
+</resources>
