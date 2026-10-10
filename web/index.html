@@ -420,6 +420,18 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 6px 0; width: 100
 .top-role .seg .ic { display: none; }
 @media (min-width: 900px) and (max-width: 1239px) { .nav .ic { display: none; } .nav button { padding: 0 11px; } .topbar-in { gap: 10px; } .logo-word { display: none; } }
 @media (max-width: 440px) { .logo-word { display: none; } .bell { display: none; } }
+
+/* two-step sign-in */
+.steps { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--faint); }
+.steps span { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 99px; background: var(--soft); }
+.steps span.on { color: var(--primary-ink); background: var(--primary-soft); }
+.steps span.done { color: var(--primary-ink); background: var(--primary-soft); opacity: .75; }
+.steps i { flex: 0 0 18px; height: 2px; border-radius: 2px; background: var(--line-strong); }
+.code-input { font-size: 26px; letter-spacing: .4em; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.code-input::placeholder { letter-spacing: .4em; }
+.boot { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 12px; }
+body.busy, body.busy * { cursor: progress !important; }
+.btn.quiet:disabled { color: var(--faint); }
 </style>
 
 </head>
@@ -427,6 +439,8 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 6px 0; width: 100
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<!-- Supabase settings. Leave empty to run in demo mode. -->
+<script src="config.js"></script>
 <script>
 (() => {
 "use strict";
@@ -479,7 +493,7 @@ const D = {
   e_exists: ["An account with this email already exists. Sign in instead.", "Аккаунт с этой почтой уже существует. Войдите.", "Бұл поштамен аккаунт бар. Оның орнына кіріңіз."],
   e_wrong: ["Email or password is incorrect.", "Неверная почта или пароль.", "Пошта немесе құпиясөз қате."],
   demo_auth_t: ["Demo authentication.", "Демо-авторизация.", "Демо аутентификация."],
-  demo_auth_b: ["This prototype has no server. Accounts exist only in this browser tab and are not secure, so please don't use a real password.", "У прототипа нет сервера. Аккаунты хранятся только в этой вкладке и не защищены — не используйте настоящий пароль.", "Бұл прототипте сервер жоқ. Аккаунттар тек осы браузер қойындысында сақталады және қорғалмаған, сондықтан нақты құпиясөзді қолданбаңыз."],
+  demo_auth_b: ["This copy has no server connected. Accounts exist only in this browser tab, and the email code is shown on screen instead of being sent. Please don't use a real password.", "К этой копии не подключён сервер. Аккаунты хранятся только в этой вкладке, а код из письма показывается на экране. Не используйте настоящий пароль.", "Бұл нұсқаға сервер қосылмаған. Аккаунттар тек осы қойындыда сақталады, ал пошта коды экранда көрсетіледі. Нақты құпиясөзді қолданбаңыз."],
   use_demo: ["Use the demo account: {e}", "Войти в демо-аккаунт: {e}", "Демо аккаунтты пайдалану: {e}"],
   back: ["Back", "Назад", "Артқа"],
   language: ["Language", "Язык", "Тіл"],
@@ -703,7 +717,7 @@ const D = {
   demo_account: ["Demo account", "Демо-аккаунт", "Демо аккаунт"],
   local_account: ["Local account", "Локальный аккаунт", "Жергілікті аккаунт"],
   impact: ["Your impact", "Ваш вклад", "Сіздің үлесіңіз"],
-  n_reviews: [(v) => `${v.n} reviews`, (v) => `${v.n} ${ruP(v.n, "отзыв", "отзыва", "отзывов")}`, (v) => `${v.n} пікір`],
+  n_reviews: [(v) => `${v.n} ${v.n === 1 ? "review" : "reviews"}`, (v) => `${v.n} ${ruP(v.n, "отзыв", "отзыва", "отзывов")}`, (v) => `${v.n} пікір`],
   tasks_done: ["tasks done", "задач выполнено", "тапсырма орындалды"],
   hours_given: ["hours given", "часов помощи", "сағат көмек"],
   h_unit: ["{n}h", "{n} ч", "{n} сағ"],
@@ -732,6 +746,37 @@ const D = {
   rating: ["Rating", "Оценка", "Баға"],
   result: ["Result", "Результат", "Нәтиже"],
   analysis: ["Analysis", "Анализ", "Талдау"],
+
+  // two-step sign-in & live database
+  check_email: ["Check your email", "Проверьте почту", "Поштаңызды тексеріңіз"],
+  code_sent_signup: ["We sent a 6-digit code to {e}. Enter it to confirm your account.", "Мы отправили 6-значный код на {e}. Введите его, чтобы подтвердить аккаунт.", "{e} поштасына 6 таңбалы код жібердік. Аккаунтты растау үшін соны енгізіңіз."],
+  code_sent_login: ["Password accepted. We sent a 6-digit code to {e}. Enter it to finish signing in.", "Пароль принят. Мы отправили 6-значный код на {e}. Введите его, чтобы завершить вход.", "Құпиясөз қабылданды. {e} поштасына 6 таңбалы код жібердік. Кіруді аяқтау үшін соны енгізіңіз."],
+  code_label: ["Email code", "Код из письма", "Хаттағы код"],
+  verify: ["Verify", "Подтвердить", "Растау"],
+  resend: ["Send a new code", "Отправить код ещё раз", "Кодты қайта жіберу"],
+  resend_in: ["New code available in {n} s", "Новый код можно запросить через {n} с", "Жаңа кодты {n} с кейін сұрауға болады"],
+  code_resent: ["New code sent", "Новый код отправлен", "Жаңа код жіберілді"],
+  other_email: ["Use a different email", "Указать другую почту", "Басқа поштаны қолдану"],
+  spam_hint: ["Can't find the email? Check your spam folder.", "Не нашли письмо? Проверьте папку «Спам».", "Хат келмеді ме? «Спам» қалтасын тексеріңіз."],
+  step_pw: ["Password", "Пароль", "Құпиясөз"],
+  step_code: ["Email code", "Код из письма", "Поштадағы код"],
+  e_code: ["That code is wrong or has expired. Check the latest email or send a new code.", "Код неверный или устарел. Проверьте последнее письмо или запросите новый код.", "Код қате немесе мерзімі өтті. Соңғы хатты тексеріңіз немесе жаңа код сұраңыз."],
+  e_rate: ["Too many attempts. Wait a minute and try again.", "Слишком много попыток. Подождите минуту и попробуйте снова.", "Тым көп әрекет. Бір минут күтіп, қайталап көріңіз."],
+  e_unconfirmed: ["This email isn't confirmed yet. We've sent you a new code.", "Эта почта ещё не подтверждена. Мы отправили новый код.", "Бұл пошта әлі расталмаған. Сізге жаңа код жібердік."],
+  e_network: ["Couldn't reach the server. Check your connection and try again.", "Не удалось связаться с сервером. Проверьте подключение и попробуйте снова.", "Серверге қосылу мүмкін болмады. Байланысты тексеріп, қайталап көріңіз."],
+  e_generic: ["Something went wrong: {m}", "Что-то пошло не так: {m}", "Бірдеңе дұрыс болмады: {m}"],
+  demo_code: ["Demo mode: no email is sent. Your code is {c}.", "Демо-режим: письмо не отправляется. Ваш код: {c}.", "Демо режим: хат жіберілмейді. Сіздің кодыңыз: {c}."],
+  live_auth_note: ["Two-step sign-in: your password plus a 6-digit code sent to your email.", "Двухэтапный вход: пароль и 6-значный код из письма.", "Екі қадамды кіру: құпиясөз және поштаға келетін 6 таңбалы код."],
+  w_fine_live: ["Sign-in is protected by a password and an emailed code.", "Вход защищён паролем и кодом из письма.", "Кіру құпиясөз бен поштадағы кодпен қорғалған."],
+  new_member: ["New member", "Новый участник", "Жаңа мүше"],
+  imp_l1: ["open requests", "открытых запросов", "ашық өтініш"],
+  imp_l2: ["neighbours volunteering", "соседей откликнулись", "көрші көмек ұсынды"],
+  imp_l3: ["tasks completed", "задач выполнено", "тапсырма орындалды"],
+  imp_cap_live: ["Live from the ASAR database", "Данные из базы ASAR", "ASAR дерекқорынан"],
+  email_verified: ["Email verified", "Почта подтверждена", "Пошта расталған"],
+  footnote_live: ["Your requests, applications and reviews are stored in the ASAR database. Ratings and achievements are calculated from them.", "Ваши запросы, отклики и отзывы хранятся в базе ASAR. Оценки и достижения рассчитываются по ним.", "Өтініштеріңіз, өтінімдеріңіз бен пікірлеріңіз ASAR дерекқорында сақталады. Бағалар мен жетістіктер солардан есептеледі."],
+  loading: ["Loading…", "Загрузка…", "Жүктелуде…"],
+  save_err: ["Couldn't save: {m}", "Не удалось сохранить: {m}", "Сақтау мүмкін болмады: {m}"],
 
   // toasts
   toast_vol: ["Volunteer mode: find someone to help", "Режим волонтёра: найдите, кому помочь", "Ерікті режимі: көмек керек адамды табыңыз"],
@@ -818,6 +863,38 @@ const initials = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[
 const hash = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
 const first = (n) => n.split(" ")[0];
 
+/* ================= backend =================
+   With config.js filled in (Supabase URL + public anon key) the site uses the real
+   database and emailed sign-in codes. Without it, everything runs in demo mode. */
+const CFG = window.ASAR_CONFIG || {};
+const LIVE = !!(CFG.supabaseUrl && CFG.supabaseAnonKey);
+let sb = null;
+function loadSupabase() {
+  return new Promise((res, rej) => {
+    if (window.supabase?.createClient) return res();
+    const el = document.createElement("script");
+    el.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
+    el.onload = () => res(); el.onerror = () => rej(new Error("network"));
+    document.head.appendChild(el);
+  });
+}
+/** Claims inside a Supabase access token (only `amr` is read). */
+const jwtClaims = (token) => { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); } catch (e) { return {}; } };
+const isCodeSession = (session) => (jwtClaims(session?.access_token).amr || []).some((m) => ["otp", "magiclink", "email/signup"].includes(m.method));
+/** Map a Supabase/network error to a translation key (+ raw message for the generic case). */
+function errKey(err) {
+  const m = String(err?.message || err || "");
+  if (/invalid login credentials/i.test(m)) return ["e_wrong"];
+  if (/already registered|already exists/i.test(m)) return ["e_exists"];
+  if (/not confirmed/i.test(m)) return ["e_unconfirmed"];
+  if (/expired|invalid.*(otp|token)|token.*invalid/i.test(m)) return ["e_code"];
+  if (err?.status === 429 || /rate limit|security purposes|too many/i.test(m)) return ["e_rate"];
+  if (/fetch|network|failed to load/i.test(m)) return ["e_network"];
+  if (/password/i.test(m) && /6|characters|short/i.test(m)) return ["e_pass"];
+  return ["e_generic", m];
+}
+const errText = (err) => { const [k, m] = errKey(err); return t(k, { m }); };
+
 /* ================= domain ================= */
 const CATS = {
   elderly: { label: ["Elderly care", "Помощь пожилым", "Қарттарға көмек"], short: ["Elderly", "Пожилые", "Қарттар"], icon: "elderly" },
@@ -859,7 +936,7 @@ const SKILLS = {
 };
 const skill = (k) => L(SKILLS[k] || k);
 const DIFF = (d) => t("d_" + d);
-const ME = "me";
+let ME = "me";
 const DEMO_EMAIL = "demo@asar.kz", DEMO_PASS = "asar2026";
 
 const person = (id, name, rating, done, verified, since) => ({ id, name, rating, done, verified, since });
@@ -935,12 +1012,12 @@ function seed(me) {
 }
 
 const HISTORY = [
-  { title: ["Plant trees in Baum Grove", "Посадка деревьев в роще Баума", "Баум тоғайында ағаш отырғызу"], cat: "eco", when: ["12 days ago", "12 дней назад", "12 күн бұрын"], h: 4, r: 5 },
-  { title: ["Library book sorting", "Сортировка книг в библиотеке", "Кітапханада кітап сұрыптау"], cat: "education", when: ["September", "Сентябрь", "Қыркүйек"], h: 3, r: 5 },
-  { title: ["Groceries for Apa Raushan", "Продукты для апы Раушан", "Раушан апаға азық-түлік"], cat: "elderly", when: ["September", "Сентябрь", "Қыркүйек"], h: 1, r: 5 },
-  { title: ["Food parcels for 80 families", "Продуктовые наборы для 80 семей", "80 отбасыға азық-түлік себеті"], cat: "food", when: ["August", "Август", "Тамыз"], h: 4, r: 4 },
-  { title: ["Kok-Tobe trail cleanup", "Уборка тропы на Кок-Тобе", "Көктөбе соқпағын тазалау"], cat: "eco", when: ["August", "Август", "Тамыз"], h: 5, r: 5 },
-  { title: ["Laptop setup for a school", "Настройка ноутбуков для школы", "Мектепке ноутбук баптау"], cat: "tech", when: ["July", "Июль", "Шілде"], h: 2, r: 5 },
+  { title: ["Plant trees in Baum Grove", "Посадка деревьев в роще Баума", "Баум тоғайында ағаш отырғызу"], cat: "eco", when: ["12 days ago", "12 дней назад", "12 күн бұрын"], h: 4, r: 5, by: "Taza Almaty Initiative" },
+  { title: ["Library book sorting", "Сортировка книг в библиотеке", "Кітапханада кітап сұрыптау"], cat: "education", when: ["September", "Сентябрь", "Қыркүйек"], h: 3, r: 5, by: "Almaty Central Library" },
+  { title: ["Groceries for Apa Raushan", "Продукты для апы Раушан", "Раушан апаға азық-түлік"], cat: "elderly", when: ["September", "Сентябрь", "Қыркүйек"], h: 1, r: 5, by: "Saule Nurlanovna" },
+  { title: ["Food parcels for 80 families", "Продуктовые наборы для 80 семей", "80 отбасыға азық-түлік себеті"], cat: "food", when: ["August", "Август", "Тамыз"], h: 4, r: 4, by: "Meirim Food Bank" },
+  { title: ["Kok-Tobe trail cleanup", "Уборка тропы на Кок-Тобе", "Көктөбе соқпағын тазалау"], cat: "eco", when: ["August", "Август", "Тамыз"], h: 5, r: 5, by: "Taza Almaty Initiative" },
+  { title: ["Laptop setup for a school", "Настройка ноутбуков для школы", "Мектепке ноутбук баптау"], cat: "tech", when: ["July", "Июль", "Шілде"], h: 2, r: 5, by: "School No. 54" },
 ];
 const BASE_RATINGS = [5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 5];
 
@@ -1068,13 +1145,16 @@ const S = {
   accounts: { [DEMO_EMAIL]: { name: "Aigerim Bekova", email: DEMO_EMAIL, pass: DEMO_PASS } },
   session: null, me: person(ME, "Aigerim Bekova", 4.9, 7, true, 2024),
   tasks: [], role: "volunteer", tab: "home", stack: [], scroll: {},
-  auth: null, authF: { name: "", email: "", pass: "", show: false, err: "" },
+  booting: LIVE,
+  auth: null, authF: null,
   q: "", cat: null, sort: "nearest", myTab: null,
   draft: null, sheet: null,
   ratings: [], history: [], hours: 0,
   lab: { task: null, review: null, rating: 5 }, // null = follow the current language's sample
 };
-S.tasks = seed(S.me);
+S.tasks = LIVE ? [] : seed(S.me);
+function resetAuthForm() { S.authF = { name: "", email: "", pass: "", show: false, err: "", errMsg: "", code: "", pending: null, demoCode: null, busy: false, resendAt: 0 }; }
+resetAuthForm();
 const newDraft = () => ({ title: "", desc: "", cat: null, area: "bostandyk", day: 1, hour: 11, vols: 2, skills: [], diff: "moderate", errors: false });
 S.draft = newDraft();
 
@@ -1083,7 +1163,8 @@ const update = (id, fn) => { const i = S.tasks.findIndex((x) => x.id === id); if
 const myRequests = () => S.tasks.filter((x) => x.req.id === ME).sort((a, b) => (a.done - b.done) || b.createdAt - a.createdAt);
 const myApps = () => S.tasks.filter((x) => appOf(x, ME)).sort((a, b) => (a.done - b.done) || a.date - b.date);
 const pendingForMe = () => myRequests().filter((x) => !x.done).reduce((n, x) => n + pending(x), 0);
-const allRatings = () => BASE_RATINGS.concat(S.ratings);
+const allRatings = () => (LIVE ? myReviews().map(([, v]) => v.rating) : BASE_RATINGS.concat(S.ratings));
+const myReviews = () => S.tasks.flatMap((x) => x.reviews.filter((v) => v.vid === ME).map((v) => [x, v]));
 
 let toastTimer;
 function toast(msg) {
@@ -1099,7 +1180,155 @@ function startSession(acc) {
   renameMe(acc.name);
   S.session = { name: acc.name, email: acc.email, demo: acc.email === DEMO_EMAIL };
   S.role = "volunteer"; S.tab = "home"; S.stack = []; S.auth = null;
+  resetAuthForm();
   render(); window.scrollTo(0, 0);
+}
+
+/* ================= data: live database ================= */
+const SELECT = `*, requester:profiles!tasks_requester_id_fkey(id,name,created_at),
+  applications(id,volunteer_id,message,status,created_at, volunteer:profiles!applications_volunteer_id_fkey(id,name,created_at)),
+  reviews(id,volunteer_id,rating,text,verification,created_at, author:profiles!reviews_author_id_fkey(id,name), volunteer:profiles!reviews_volunteer_id_fkey(id,name))`;
+const i18nTuple = (o, fallback) => (o && (o.en || o.ru || o.kk) ? [o.en || fallback, o.ru || o.en || fallback, o.kk || o.en || fallback] : fallback);
+const parseDur = (v) => { const s0 = String(v ?? "2"); return { h: s0.replace("~", ""), ap: s0.startsWith("~") }; };
+const durString = (d) => `${d.ap ? "~" : ""}${d.h}`;
+
+async function loadAll() {
+  const { data, error } = await sb.from("tasks").select(SELECT).order("created_at", { ascending: false });
+  if (error) throw error;
+  const ratings = {};
+  data.forEach((r0) => r0.reviews.forEach((v) => (ratings[v.volunteer_id] ??= []).push(v.rating)));
+  const pp = (p) => {
+    if (!p) return null;
+    const rs = ratings[p.id] || [];
+    return person(p.id, p.name, rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null, rs.length, true, new Date(p.created_at).getFullYear());
+  };
+  S.tasks = data.map((r0) => ({
+    id: r0.id,
+    title: i18nTuple(r0.title_i18n, r0.title), desc: i18nTuple(r0.description_i18n, r0.description),
+    cat: r0.category, area: r0.area, dist: null, date: new Date(r0.starts_at), dur: parseDur(r0.duration_h),
+    need: r0.volunteers_needed,
+    req: r0.requester ? pp(r0.requester) : person("org:" + r0.org_name, r0.org_name, null, 0, true, new Date(r0.created_at).getFullYear()),
+    skills: r0.skills || [], diff: r0.difficulty, done: r0.completed, createdAt: Date.parse(r0.created_at),
+    apps: r0.applications.filter((a) => a.volunteer).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
+      .map((a) => ({ id: a.id, v: pp(a.volunteer), msg: a.message, status: a.status, at: Date.parse(a.created_at) })),
+    reviews: r0.reviews.map((v) => ({ vid: v.volunteer_id, vname: v.volunteer?.name || "", author: v.author?.name || "", rating: v.rating, text: v.text, ver: v.verification || verify(v.text, v.rating, null) })),
+  }));
+  const meRow = data.flatMap((r0) => [r0.requester, ...r0.applications.map((a) => a.volunteer)]).find((p) => p?.id === ME);
+  if (meRow) S.me = { ...pp(meRow) };
+}
+
+/** One interface for both modes; every method resolves when the data is up to date. */
+const api = {
+  async createTask(d) {
+    const row = { title: d.title, description: d.desc, category: d.cat, area: d.area, starts_at: d.date.toISOString(), duration_h: durString(d.dur), volunteers_needed: d.need, skills: d.skills, difficulty: d.diff };
+    if (LIVE) { const { error } = await sb.from("tasks").insert(row); if (error) throw error; return loadAll(); }
+    S.tasks.unshift({ id: "t-" + uid(), title: d.title, desc: d.desc, cat: d.cat, area: d.area, dist: 0.4, date: d.date, dur: d.dur, need: d.need, req: S.me, skills: d.skills, diff: d.diff, apps: [], done: false, reviews: [], createdAt: Date.now() });
+  },
+  async apply(taskId, note) {
+    if (LIVE) { const { error } = await sb.from("applications").insert({ task_id: taskId, message: note }); if (error) throw error; return loadAll(); }
+    update(taskId, (y) => ({ ...y, apps: [...y.apps, app("a-" + uid(), S.me, note, "pending", 0)] }));
+  },
+  async withdraw(taskId) {
+    if (LIVE) { const { error } = await sb.from("applications").delete().eq("task_id", taskId).eq("volunteer_id", ME).eq("status", "pending"); if (error) throw error; return loadAll(); }
+    update(taskId, (y) => ({ ...y, apps: y.apps.filter((a) => !(a.v.id === ME && a.status === "pending")) }));
+  },
+  async decide(taskId, appId, status) {
+    if (LIVE) { const { error } = await sb.from("applications").update({ status }).eq("id", appId); if (error) throw error; return loadAll(); }
+    update(taskId, (y) => (status === "accepted" && spots(y) === 0 ? y : { ...y, apps: y.apps.map((a) => (a.id === appId ? { ...a, status } : a)) }));
+  },
+  async complete(taskId, reviews) {
+    if (LIVE) {
+      const rows = reviews.map((v) => ({ task_id: taskId, volunteer_id: v.vid, rating: v.rating, text: v.text, verification: v.ver }));
+      if (rows.length) { const { error } = await sb.from("reviews").insert(rows); if (error) throw error; }
+      const { error } = await sb.from("tasks").update({ completed: true }).eq("id", taskId); if (error) throw error;
+      return loadAll();
+    }
+    update(taskId, (y) => ({ ...y, done: true, reviews: [...y.reviews, ...reviews] }));
+  },
+};
+
+/* ================= auth: password + emailed code ================= */
+const demoCode = () => String(Math.floor(100000 + Math.random() * 900000));
+const auth = {
+  /** Step 1 of sign-up: create the account and send the confirmation code. */
+  async register(name, email, pass) {
+    if (LIVE) {
+      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name } } });
+      if (error) throw error;
+      if (data.user && !data.user.identities?.length) throw new Error("already registered");
+    } else {
+      if (S.accounts[email]) throw new Error("already registered");
+      S.accounts[email] = { name, email, pass, unconfirmed: true };
+      S.authF.demoCode = demoCode();
+    }
+    return { mode: "signup", email };
+  },
+  /** Step 1 of sign-in: check the password, then email a one-time code. */
+  async login(email, pass) {
+    if (LIVE) {
+      const { data: pw, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) {
+        if (/not confirmed/i.test(error.message)) { await sb.auth.resend({ type: "signup", email }); return { mode: "signup", email, err: "e_unconfirmed" }; }
+        throw error;
+      }
+      // Server-side proof that the password step happened (only a password session may write it).
+      const proof = await sb.from("login_proofs").insert({ user_id: pw.user.id });
+      await sb.auth.signOut({ scope: "local" });
+      if (proof.error) throw proof.error;
+      const { error: e2 } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+      if (e2) throw e2;
+    } else {
+      const acc = S.accounts[email];
+      if (!acc || acc.pass !== pass) throw new Error("Invalid login credentials");
+      S.authF.demoCode = demoCode();
+      return { mode: acc.unconfirmed ? "signup" : "login", email };
+    }
+    return { mode: "login", email };
+  },
+  /** Step 2: verify the emailed code and open the session. */
+  async verify(pending, code) {
+    if (LIVE) {
+      const { data, error } = await sb.auth.verifyOtp({ email: pending.email, token: code, type: pending.mode === "signup" ? "signup" : "email" });
+      if (error) throw error;
+      return finishLive(data.session);
+    }
+    if (code !== S.authF.demoCode) throw new Error("Token has expired or is invalid");
+    const acc = S.accounts[pending.email]; delete acc.unconfirmed;
+    startSession(acc);
+  },
+  async resend(pending) {
+    if (LIVE) {
+      const { error } = pending.mode === "signup"
+        ? await sb.auth.resend({ type: "signup", email: pending.email })
+        : await sb.auth.signInWithOtp({ email: pending.email, options: { shouldCreateUser: false } });
+      if (error) throw error;
+    } else S.authF.demoCode = demoCode();
+  },
+  async logout() { if (LIVE) await sb.auth.signOut({ scope: "local" }); },
+};
+
+async function finishLive(session) {
+  const u = session.user;
+  ME = u.id;
+  S.me = person(u.id, u.user_metadata?.name || u.email.split("@")[0], null, 0, true, new Date(u.created_at).getFullYear());
+  await loadAll();
+  S.session = { name: S.me.name, email: u.email, demo: false };
+  S.role = "volunteer"; S.tab = "home"; S.stack = []; S.auth = null; S.booting = false;
+  resetAuthForm();
+  render(); window.scrollTo(0, 0);
+}
+
+async function boot() {
+  try {
+    await loadSupabase();
+    sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
+    const { data } = await sb.auth.getSession();
+    if (data.session && isCodeSession(data.session)) return await finishLive(data.session);
+    if (data.session) await sb.auth.signOut({ scope: "local" }); // half-finished sign-in
+  } catch (e) {
+    S.bootErr = errText(e);
+  }
+  S.booting = false; render();
 }
 
 /* ================= small components ================= */
@@ -1119,7 +1348,7 @@ const seg = (opts, sel, act) => `<div class="seg" role="group">
   ${opts.map((o, i) => `<button type="button" aria-pressed="${i === sel}" data-act="${act}" data-v="${o.v}">${o.icon ? icon(o.icon, "s") : ""}<span>${esc(o.label)}</span></button>`).join("")}</div>`;
 const roleSeg = () => seg([{ v: "volunteer", label: t("volunteer"), icon: "hand" }, { v: "requester", label: t("requester"), icon: "megaphone" }], S.role === "volunteer" ? 0 : 1, "role");
 const langSwitch = () => `<div class="lang" role="group" aria-label="${esc(t("language"))}">${LANGS.map((l) => `<button type="button" data-act="lang" data-v="${l.v}" aria-pressed="${lang === l.v}" lang="${l.v}" title="${l.name}">${l.label}</button>`).join("")}</div>`;
-const personLine = (p, s = 44) => `<div class="person">${avatar(p.name, s)}<div class="grow"><div class="nm">${esc(p.name)}${p.verified ? `<span title="${esc(t("verified"))}">${icon("verified", "s")}</span>` : ""}</div><div class="sub">${icon("star", "xs")}<span class="num">${esc(t("tasks_since", { r: p.rating.toFixed(1), d: p.done, y: p.since }))}</span></div></div></div>`;
+const personLine = (p, s = 44) => `<div class="person">${avatar(p.name, s)}<div class="grow"><div class="nm">${esc(p.name)}${p.verified ? `<span title="${esc(t("verified"))}">${icon("verified", "s")}</span>` : ""}</div><div class="sub">${icon("star", "xs")}<span class="num">${esc(p.rating == null ? `${t("new_member")} · ${p.since}` : t("tasks_since", { r: p.rating.toFixed(1), d: p.done, y: p.since }))}</span></div></div></div>`;
 const empty = (ic, title, body, action = "") => `<div class="empty"><div class="em-ic">${icon(ic, "l")}</div><h3>${esc(title)}</h3><p>${esc(body)}</p>${action ? `<div style="margin-top:12px">${action}</div>` : ""}</div>`;
 
 function verificationHTML(v) {
@@ -1164,9 +1393,10 @@ function welcomeView() {
       <div class="ctas">
         <button class="btn primary" data-act="goAuth" data-v="register">${esc(t("create_account"))}</button>
         <button class="btn secondary" data-act="goAuth" data-v="login">${esc(t("have_account"))}</button>
-        <button class="btn quiet" data-act="demo">${esc(t("explore_demo"))}</button>
+        ${LIVE ? "" : `<button class="btn quiet" data-act="demo">${esc(t("explore_demo"))}</button>`}
       </div>
-      <p class="fine">${esc(t("w_fine"))}</p>
+      <p class="fine">${esc(t(LIVE ? "w_fine_live" : "w_fine"))}</p>
+      ${S.bootErr ? `<div class="notice err" role="alert">${esc(S.bootErr)}</div>` : ""}
     </div>
     <div class="orbit" aria-hidden="true">
       <div class="ringa"></div><div class="ringb"></div>
@@ -1180,20 +1410,46 @@ function welcomeView() {
   </div>`;
 }
 
+const authErr = (f) => (f.err ? `<div class="notice err" role="alert">${esc(t(f.err, { m: f.errMsg }))}</div>` : "");
+const steps = (pwDone) => `<div class="steps" aria-hidden="true"><span class="${pwDone ? "done" : "on"}">${icon(pwDone ? "check" : "key", "xs")}${esc(t("step_pw"))}</span><i></i><span class="${pwDone ? "on" : ""}">${icon("mail", "xs")}${esc(t("step_code"))}</span></div>`;
+
+function codeView() {
+  const f = S.authF, pd = f.pending, wait = Math.max(0, Math.ceil((f.resendAt - Date.now()) / 1000));
+  return `<div class="auth">
+    <div class="row"><button class="icon-btn" data-act="codeBack" aria-label="${esc(t("back"))}">${icon("back")}</button><span class="grow"></span>${langSwitch()}</div>
+    ${steps(true)}
+    <div><h1>${esc(t("check_email"))}</h1><p class="muted" style="margin-top:6px;font-size:16px">${esc(t(pd.mode === "signup" ? "code_sent_signup" : "code_sent_login", { e: pd.email }))}</p></div>
+    ${!LIVE && f.demoCode ? `<div class="notice amber">${icon("info")}<div>${esc(t("demo_code", { c: f.demoCode }))}</div></div>` : ""}
+    <form id="code-form" class="stack" style="gap:16px" novalidate>
+      <div class="field"><label for="f-code">${esc(t("code_label"))}</label><input class="input code-input" id="f-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="••••••" value="${esc(f.code)}"></div>
+      ${authErr(f)}
+      <button class="btn primary block" type="submit" ${f.busy ? "disabled" : ""}>${esc(f.busy ? t("loading") : t("verify"))}</button>
+    </form>
+    <div class="stack" style="gap:4px;align-items:flex-start">
+      <button class="btn quiet" id="resend" data-act="resend" ${wait ? "disabled" : ""}>${esc(wait ? t("resend_in", { n: wait }) : t("resend"))}</button>
+      <button class="btn quiet" data-act="codeBack" style="color:var(--muted)">${esc(t("other_email"))}</button>
+    </div>
+    <p class="small muted">${esc(t("spam_hint"))}</p>
+  </div>`;
+}
+
 function authView() {
+  if (S.auth === "code") return codeView();
   const m = S.auth, f = S.authF, reg = m === "register";
   return `<div class="auth">
     <div class="row"><button class="icon-btn" data-act="authBack" aria-label="${esc(t("back"))}">${icon("back")}</button><span class="grow"></span>${langSwitch()}</div>
     <div><h1>${esc(t(reg ? "join" : "welcome_back"))}</h1><p class="muted" style="margin-top:6px;font-size:16px">${esc(t(reg ? "join_sub" : "back_sub"))}</p></div>
+    ${steps(false)}
     ${seg([{ v: "register", label: t("sign_up") }, { v: "login", label: t("sign_in") }], reg ? 0 : 1, "authMode")}
     <form id="auth-form" class="stack" style="gap:16px" novalidate>
       ${reg ? `<div class="field"><label for="f-name">${esc(t("full_name"))}</label><div class="input-wrap">${icon("user")}<input class="input" id="f-name" autocomplete="name" placeholder="${esc(t("name_ph"))}" value="${esc(f.name)}"></div></div>` : ""}
       <div class="field"><label for="f-email">${esc(t("email"))}</label><div class="input-wrap">${icon("mail")}<input class="input" id="f-email" type="email" autocomplete="email" placeholder="you@example.kz" value="${esc(f.email)}"></div></div>
       <div class="field"><label for="f-pass">${esc(t("password"))}</label><div class="input-wrap">${icon("key")}<input class="input" id="f-pass" type="${f.show ? "text" : "password"}" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${esc(t("pass_ph"))}" value="${esc(f.pass)}"><button type="button" class="toggle" data-act="togglePw" aria-label="${esc(t(f.show ? "hide_pw" : "show_pw"))}">${icon(f.show ? "eyeoff" : "eye")}</button></div></div>
-      ${f.err ? `<div class="notice err" role="alert">${esc(t(f.err))}</div>` : ""}
-      <button class="btn primary block" type="submit">${esc(t(reg ? "create_account" : "sign_in_btn"))}</button>
+      ${authErr(f)}
+      <button class="btn primary block" type="submit" ${f.busy ? "disabled" : ""}>${esc(f.busy ? t("loading") : t(reg ? "create_account" : "sign_in_btn"))}</button>
     </form>
-    <div class="notice amber">${icon("info")}<div><b>${esc(t("demo_auth_t"))}</b> ${esc(t("demo_auth_b"))}<br><button class="linkbtn" data-act="fillDemo" style="margin-top:6px">${esc(t("use_demo", { e: DEMO_EMAIL }))}</button></div></div>
+    ${LIVE ? `<div class="notice info">${icon("lock")}<div>${esc(t("live_auth_note"))}</div></div>`
+      : `<div class="notice amber">${icon("info")}<div><b>${esc(t("demo_auth_t"))}</b> ${esc(t("demo_auth_b"))}<br><button class="linkbtn" data-act="fillDemo" style="margin-top:6px">${esc(t("use_demo", { e: DEMO_EMAIL }))}</button></div></div>`}
   </div>`;
 }
 
@@ -1230,7 +1486,7 @@ function visibleTasks() {
     .filter((x) => !S.cat || x.cat === S.cat)
     .filter((x) => !q || [L(x.title), L(x.desc), areaName(x.area), catLabel(x.cat)].some((s) => s.toLowerCase().includes(q)));
   const mine = list.filter((x) => x.req.id === ME).sort((a, b) => b.createdAt - a.createdAt);
-  const others = list.filter((x) => x.req.id !== ME).sort((a, b) => (S.sort === "nearest" ? a.dist - b.dist : a.date - b.date));
+  const others = list.filter((x) => x.req.id !== ME).sort((a, b) => (S.sort === "nearest" && a.dist != null && b.dist != null ? a.dist - b.dist : a.date - b.date));
   return mine.concat(others);
 }
 function taskCard(x) {
@@ -1243,7 +1499,7 @@ function taskCard(x) {
   return `<article class="card elev task" data-act="open" data-id="${x.id}" role="button" tabindex="0" aria-label="${esc(L(x.title))}">
     <div class="task-head">${catTile(x.cat, 42)}<div class="grow"><div class="cat-${x.cat} cat-label">${esc(catLabel(x.cat))}</div><div class="small faint">${esc(t("posted", { a: ago(x.createdAt) }))}</div></div>${mya && !x.done ? appPill(mya.status) : statusPill(st)}</div>
     <h3 class="task-title">${esc(L(x.title))}</h3>
-    <div class="meta"><span>${icon("pin", "s")}${esc(areaName(x.area, true))} · ${km(x.dist)}</span><span>${icon("clock", "s")}${esc(friendly(x.date))}</span></div>
+    <div class="meta"><span>${icon("pin", "s")}${esc(areaName(x.area, true))}${x.dist != null ? ` · ${km(x.dist)}` : ""}</span><span>${icon("clock", "s")}${esc(friendly(x.date))}</span></div>
     <div class="slots-row">${icon("group", "s")}<span class="num">${esc(t("vol_of", { a: accepted(x), n: x.need }))}</span><span class="grow"></span>${st === "open" ? `<span class="small muted num">${esc(t("spots_left", { n: spots(x) }))}</span>` : ""}</div>
     ${progress(accepted(x), x.need)}
     <div class="task-foot"><div class="grow who">${mine ? pill(t("your_request"), "p-primary") : `${avatar(x.req.name, 28)}<span>${esc(x.req.name)}</span>`}</div>
@@ -1260,7 +1516,9 @@ function homeView() {
     ? `<div class="req-hero"><h2>${esc(t("need_hand"))}</h2><p>${esc(t("need_hand_b"))}</p>
         <div class="row"><button class="btn sm" data-act="tab" data-v="create">${icon("plus", "s")}${esc(t("create_request"))}</button>
         <button class="manage" data-act="tab" data-v="mytasks"><span class="num">${esc(t("active_review", { a: reqs, p: pendingForMe() }))}</span><br><b>${esc(t("manage_requests"))}</b></button></div></div>`
-    : `<div><div class="impact num"><div><b>128</b><span>${esc(t("imp1"))}</span></div><div><b>42</b><span>${esc(t("imp2"))}</span></div><div><b>${esc(t("min25"))}</b><span>${esc(t("imp3"))}</span></div></div><p class="impact-cap">${esc(t("imp_cap"))}</p></div>`;
+    : LIVE
+      ? `<div><div class="impact num"><div><b>${S.tasks.filter((x) => !x.done).length}</b><span>${esc(t("imp_l1"))}</span></div><div><b>${new Set(S.tasks.flatMap((x) => x.apps.map((a) => a.v.id))).size}</b><span>${esc(t("imp_l2"))}</span></div><div><b>${S.tasks.filter((x) => x.done).length}</b><span>${esc(t("imp_l3"))}</span></div></div><p class="impact-cap">${esc(t("imp_cap_live"))}</p></div>`
+      : `<div><div class="impact num"><div><b>128</b><span>${esc(t("imp1"))}</span></div><div><b>42</b><span>${esc(t("imp2"))}</span></div><div><b>${esc(t("min25"))}</b><span>${esc(t("imp3"))}</span></div></div><p class="impact-cap">${esc(t("imp_cap"))}</p></div>`;
   const [ha, hb] = S.role === "volunteer" ? ["hv_a", "hv_b"] : ["hr_a", "hr_b"];
   return `<section class="home-hero">
       <div class="stack" style="gap:18px">
@@ -1309,7 +1567,7 @@ function detailsView(id) {
   const mine = x.req.id === ME, mya = appOf(x, ME), a = analyze(L(x.title), L(x.desc));
   const team = x.apps.filter((p) => p.status === "accepted").map((p) => p.v.name);
   const facts = `<div class="card elev facts">
-      <div class="fact"><span class="fi">${icon("pin")}</span><div><small>${esc(t("area"))}</small><b>${esc(t("away", { a: areaName(x.area), k: km(x.dist) }))}</b></div></div>
+      <div class="fact"><span class="fi">${icon("pin")}</span><div><small>${esc(t("area"))}</small><b>${esc(x.dist != null ? t("away", { a: areaName(x.area), k: km(x.dist) }) : areaName(x.area))}</b></div></div>
       <div class="fact"><span class="fi">${icon("calendar")}</span><div><small>${esc(t("when"))}</small><b>${esc(friendly(x.date))} · ${esc(dur(x.dur))}</b></div></div>
       <div class="fact"><span class="fi">${icon("group")}</span><div><small>${esc(t("slots"))}</small><b class="num">${esc(t("confirmed", { a: accepted(x), n: x.need }))}${status(x) === "open" ? esc(t("open_n", { s: spots(x) })) : ""}</b></div></div>
       ${progress(accepted(x), x.need)}
@@ -1450,43 +1708,50 @@ function myTasksView() {
 }
 
 /* ================= views: profile ================= */
-function achievements() {
-  const n = S.history.length, eco = S.history.some((h) => h.cat === "eco");
-  return [
-    ["trophy", ["First helping hand", "Первая помощь", "Алғашқы көмек қолы"], ["Completed your first ASAR task", "Выполнено первое задание в ASAR", "ASAR-дағы алғашқы тапсырма орындалды"], true, "Taza Almaty Initiative"],
-    ["leaf", ["Green Almaty", "Зелёный Алматы", "Жасыл Алматы"], ["Joined 2 eco initiatives", "Участие в 2 эко-инициативах", "2 эко-бастамаға қатысты"], true, "Taza Almaty Initiative"],
-    ["elderly", ["Respect for elders", "Уважение к старшим", "Үлкенге құрмет"], ["Helped an elderly neighbour", "Помощь пожилому соседу", "Қарт көршіге көмектесті"], true, "Saule Nurlanovna"],
-    ["sparkle", ["Asar in action", "Асар в действии", "Асар іс жүзінде"], ["Complete a task during this demo", "Выполните задачу в этом демо", "Осы демода тапсырма орындаңыз"], n > 0, n > 0 ? t("asar_demo") : null],
-    ["medal", ["Ten good deeds", "Десять добрых дел", "Он игі іс"], ["Complete 10 tasks", "Выполните 10 задач", "10 тапсырма орындаңыз"], HISTORY.length + n >= 10, null],
-    ["leaf", ["Eco champion", "Эко-чемпион", "Эко чемпион"], ["Join 3 eco initiatives", "Примите участие в 3 эко-инициативах", "3 эко-бастамаға қатысыңыз"], eco, null],
+/** Completed helps, newest first: demo baseline + this session, or real ones from the database. */
+function historyList() {
+  if (!LIVE) return S.history.slice().reverse().concat(HISTORY);
+  return myReviews().filter(([x]) => x.done).sort(([a], [b]) => b.date - a.date)
+    .map(([x, v]) => ({ title: x.title, cat: x.cat, when: x.date.toLocaleDateString(locale(), { day: "numeric", month: "long" }), h: parseFloat(x.dur.h) || 2, r: v.rating, by: x.req.name }));
+}
+function achievements(hist) {
+  const n = hist.length, of = (c) => hist.filter((h) => h.cat === c), by = (list, i = 0) => list[i]?.by || null;
+  const list = [
+    ["trophy", ["First helping hand", "Первая помощь", "Алғашқы көмек қолы"], ["Completed your first ASAR task", "Выполнено первое задание в ASAR", "ASAR-дағы алғашқы тапсырма орындалды"], n >= 1, by(hist, n - 1)],
+    ["leaf", ["Green Almaty", "Зелёный Алматы", "Жасыл Алматы"], ["Joined 2 eco initiatives", "Участие в 2 эко-инициативах", "2 эко-бастамаға қатысты"], of("eco").length >= 2, by(of("eco"), 1)],
+    ["elderly", ["Respect for elders", "Уважение к старшим", "Үлкенге құрмет"], ["Helped an elderly neighbour", "Помощь пожилому соседу", "Қарт көршіге көмектесті"], of("elderly").length >= 1, by(of("elderly"))],
+    ["medal", ["Ten good deeds", "Десять добрых дел", "Он игі іс"], ["Complete 10 tasks", "Выполните 10 задач", "10 тапсырма орындаңыз"], n >= 10, by(hist)],
+    ["leaf", ["Eco champion", "Эко-чемпион", "Эко чемпион"], ["Join 3 eco initiatives", "Примите участие в 3 эко-инициативах", "3 эко-бастамаға қатысыңыз"], of("eco").length >= 3, by(of("eco"), 2)],
   ];
+  if (!LIVE) list.splice(3, 0, ["sparkle", ["Asar in action", "Асар в действии", "Асар іс жүзінде"], ["Complete a task during this demo", "Выполните задачу в этом демо", "Осы демода тапсырма орындаңыз"], S.history.length > 0, S.history.length ? t("asar_demo") : null]);
+  return list.map(([ic, ti, d, earned, b]) => [ic, ti, d, earned, earned ? b : null]);
 }
 function profileView() {
-  const r = allRatings(), avg = r.reduce((a, b) => a + b, 0) / r.length;
-  const hist = S.history.slice().reverse().concat(HISTORY);
-  const reviews = S.tasks.flatMap((x) => x.reviews.filter((v) => v.vid === ME).map((v) => [x, v]));
+  const r = allRatings(), avg = r.length ? (r.reduce((a, b) => a + b, 0) / r.length).toFixed(1) : "—";
+  const hist = historyList();
+  const reviews = myReviews();
   return `<div class="profile">
     <div class="ident"><div class="halo">${avatar(S.me.name, 94, true)}<span class="vb">${icon("check", "xs")}</span></div>
       <h1>${esc(S.me.name)}</h1><div class="muted">${esc(S.session.email)}</div>
-      <div class="row" style="margin-top:8px;flex-wrap:wrap;justify-content:center">${pill(t("member_since", { y: S.me.since }), "p-primary", { icon: "hand" })}${demoBadge(t(S.session.demo ? "demo_account" : "local_account"))}</div></div>
+      <div class="row" style="margin-top:8px;flex-wrap:wrap;justify-content:center">${pill(t("member_since", { y: S.me.since }), "p-primary", { icon: "hand" })}${LIVE ? pill(t("email_verified"), "p-primary", { icon: "check" }) : demoBadge(t(S.session.demo ? "demo_account" : "local_account"))}</div></div>
     <div>${roleSeg()}</div>
     <section class="stack" style="gap:12px">
-      <div class="row"><h2 class="grow" style="font-size:20px">${esc(t("impact"))}</h2>${demoBadge()}</div>
+      <div class="row"><h2 class="grow" style="font-size:20px">${esc(t("impact"))}</h2>${LIVE ? "" : demoBadge()}</div>
       <div class="tiles num">
-        <div class="tile stat"><span style="color:var(--sand)">${icon("star")}</span><b>${avg.toFixed(1)}</b><span>${esc(t("n_reviews", { n: r.length }))}</span></div>
-        <div class="tile stat">${icon("trophy")}<b>${HISTORY.length + S.history.length}</b><span>${esc(t("tasks_done"))}</span></div>
-        <div class="tile stat">${icon("hand")}<b>${esc(t("h_unit", { n: HISTORY.reduce((a, h) => a + h.h, 0) + S.hours }))}</b><span>${esc(t("hours_given"))}</span></div>
+        <div class="tile stat"><span style="color:var(--sand)">${icon("star")}</span><b>${avg}</b><span>${esc(t("n_reviews", { n: r.length }))}</span></div>
+        <div class="tile stat">${icon("trophy")}<b>${hist.length}</b><span>${esc(t("tasks_done"))}</span></div>
+        <div class="tile stat">${icon("hand")}<b>${esc(t("h_unit", { n: Math.round(hist.reduce((a, h) => a + h.h, 0)) }))}</b><span>${esc(t("hours_given"))}</span></div>
       </div>
     </section>
     <section class="stack" style="gap:12px">
-      <div><h2 style="font-size:20px">${esc(t("achievements"))}</h2><p class="small muted">${esc(t("achievements_b"))}</p></div>
-      <div class="ach-grid">${achievements().map(([ic, ti, d, earned, by]) => `<div class="card ach ${earned ? "" : "locked"}"><span class="ai-ic">${icon(earned ? ic : "lock")}</span><b>${esc(L(ti))}</b><span class="small muted">${esc(L(d))}</span>${by ? `<span class="by">${icon("verified", "xs")}${esc(t("by", { n: by }))}</span>` : ""}</div>`).join("")}</div>
+      <div><h2 style="font-size:20px">${esc(t("achievements"))}</h2><p class="small muted">${esc(LIVE ? t("achievements_b").replace(/ \((demo|демо)\)$/, "") : t("achievements_b"))}</p></div>
+      <div class="ach-grid">${achievements(hist).map(([ic, ti, d, earned, by]) => `<div class="card ach ${earned ? "" : "locked"}"><span class="ai-ic">${icon(earned ? ic : "lock")}</span><b>${esc(L(ti))}</b><span class="small muted">${esc(L(d))}</span>${by ? `<span class="by">${icon("verified", "xs")}${esc(t("by", { n: by }))}</span>` : ""}</div>`).join("")}</div>
     </section>
     <div class="card lab-card" data-act="openLab" role="button" tabindex="0"><span class="li">${icon("sparkle", "l")}</span><div class="grow"><b style="font-size:16px">${esc(t("lab"))}</b><div class="small muted">${esc(t("lab_b"))}</div><div style="margin-top:6px">${aiBadge()}</div></div><span style="color:var(--info)">${icon("chev")}</span></div>
     ${reviews.length ? `<section class="stack" style="gap:12px"><div><h2 style="font-size:20px">${esc(t("reviews_about"))}</h2><p class="small muted">${esc(t("n_published", { n: reviews.length }))}</p></div><div class="list">${reviews.map(([x, v]) => `<div data-act="open" data-id="${x.id}" role="button" tabindex="0" style="cursor:pointer">${reviewHTML(v, L(x.title))}</div>`).join("")}</div></section>` : ""}
     <section class="stack" style="gap:12px"><div><h2 style="font-size:20px">${esc(t("history"))}</h2><p class="small muted">${esc(t("history_b"))}</p></div>
       <div class="card hist">${hist.map((h) => `<div class="hr">${catTile(h.cat, 40)}<div class="grow"><div class="t">${esc(L(h.title))}</div><div class="small muted num">${esc(L(h.when))} · ${esc(t("h_unit", { n: h.h }))}</div></div>${h.r ? stars(h.r) : ""}</div>`).join("")}</div></section>
-    <p class="small faint" style="text-align:center">${esc(t("footnote"))}</p>
+    <p class="small faint" style="text-align:center">${esc(t(LIVE ? "footnote_live" : "footnote"))}</p>
     <button class="btn secondary block danger-text" data-act="logout">${icon("logout")}${esc(t("sign_out"))}</button>
   </div>`;
 }
@@ -1521,7 +1786,8 @@ function labView() {
 /* ================= render ================= */
 function render() {
   document.documentElement.lang = lang;
-  $("#app").innerHTML = S.session ? shell() : S.auth ? authView() : welcomeView();
+  $("#app").innerHTML = S.booting ? `<div class="boot">${logoMark(48)}<p class="muted">${esc(t("loading"))}</p></div>`
+    : S.session ? shell() : S.auth ? authView() : welcomeView();
   if (S.sheet) S.sheet.fresh = false; // slide-in plays only when a sheet first opens
 }
 function go(fn) { fn(); render(); }
@@ -1529,6 +1795,14 @@ function push(entry) { if (!S.stack.length) S.scroll[S.tab] = window.scrollY; S.
 function refreshPreview(i) {
   const d = S.sheet.drafts[i];
   $("#vp-" + i).innerHTML = verificationHTML(verify(d.text, d.rating, S.sheet.drafts.length));
+}
+
+/** Runs a data change once at a time and reports failures instead of losing them. */
+let saving = false;
+async function save(fn) {
+  if (saving) return; saving = true; document.body.classList.add("busy");
+  try { await fn(); } catch (e) { toast(t("save_err", { m: errText(e) })); try { if (LIVE) { await loadAll(); render(); } } catch (e2) { /* offline */ } }
+  finally { saving = false; document.body.classList.remove("busy"); }
 }
 
 /* ================= actions ================= */
@@ -1543,12 +1817,22 @@ const A = {
     render(); toast(t("toast_lang"));
   },
   demo: () => startSession(S.accounts[DEMO_EMAIL]),
-  goAuth: (el) => go(() => { S.auth = el.dataset.v; S.authF.err = ""; }),
+  goAuth: (el) => go(() => { S.auth = el.dataset.v; S.authF.err = ""; S.bootErr = null; }),
   authBack: () => go(() => { S.auth = null; }),
   authMode: (el) => go(() => { S.auth = el.dataset.v; S.authF.err = ""; }),
   togglePw: () => go(() => { S.authF.show = !S.authF.show; }),
   fillDemo: () => go(() => { S.auth = "login"; Object.assign(S.authF, { email: DEMO_EMAIL, pass: DEMO_PASS, err: "" }); }),
-  logout: () => go(() => { S.session = null; S.auth = null; S.stack = []; S.sheet = null; window.scrollTo(0, 0); }),
+  logout: async () => {
+    await auth.logout().catch(() => {});
+    if (LIVE) { ME = "me"; S.tasks = []; }
+    S.session = null; S.auth = null; S.stack = []; S.sheet = null; render(); window.scrollTo(0, 0);
+  },
+  codeBack: () => go(() => { S.auth = S.authF.pending?.mode === "signup" ? "register" : "login"; Object.assign(S.authF, { err: "", code: "", pending: null }); }),
+  resend: async () => {
+    const f = S.authF; if (!f.pending || f.resendAt > Date.now()) return;
+    try { await auth.resend(f.pending); f.resendAt = Date.now() + 60000; f.err = ""; render(); toast(t("code_resent")); }
+    catch (e) { [f.err, f.errMsg] = errKey(e); render(); }
+  },
 
   tab: (el) => { S.stack = []; S.sheet = null; const v = el.dataset.v; if (v === "mytasks") S.myTab = null; S.tab = v; render(); window.scrollTo(0, v === "home" ? (S.scroll.home || 0) : 0); },
   role: (el) => { const r = el.dataset.v; if (r === S.role) return; S.role = r; S.myTab = null; render(); toast(t(r === "volunteer" ? "toast_vol" : "toast_req")); },
@@ -1563,18 +1847,21 @@ const A = {
 
   openApply: (el) => { const x = task(el.dataset.id); if (!x || appOf(x, ME) || status(x) !== "open" || S.role !== "volunteer") return; S.sheet = { fresh: true, type: "apply", id: x.id, note: t("default_note") }; render(); setTimeout(() => $("#apply-note")?.focus(), 50); },
   closeSheet: () => go(() => { S.sheet = null; }),
-  sendApply: () => {
+  sendApply: () => save(async () => {
     const x = task(S.sheet.id); const note = S.sheet.note.trim() || t("glad");
-    update(x.id, (y) => ({ ...y, apps: [...y.apps, app("a-" + uid(), S.me, note, "pending", 0)] }));
+    await api.apply(x.id, note);
     S.sheet = null; render(); toast(t("toast_sent", { n: first(x.req.name) }));
-  },
-  withdraw: (el) => { update(el.dataset.id, (y) => ({ ...y, apps: y.apps.filter((a) => !(a.v.id === ME && a.status === "pending")) })); render(); toast(t("toast_withdrawn")); },
+  }),
+  withdraw: (el) => save(async () => { await api.withdraw(el.dataset.id); render(); toast(t("toast_withdrawn")); }),
   accept: (el, e) => {
-    e.stopPropagation(); let name = "";
-    update(el.dataset.id, (y) => (spots(y) === 0 ? y : { ...y, apps: y.apps.map((a) => (a.id === el.dataset.a ? ((name = first(a.v.name)), { ...a, status: "accepted" }) : a)) }));
-    render(); if (name) toast(t("toast_team", { n: name }));
+    e.stopPropagation();
+    save(async () => {
+      const x = task(el.dataset.id), a = x?.apps.find((p) => p.id === el.dataset.a);
+      if (!a || spots(x) === 0) return;
+      await api.decide(x.id, a.id, "accepted"); render(); toast(t("toast_team", { n: first(a.v.name) }));
+    });
   },
-  reject: (el, e) => { e.stopPropagation(); update(el.dataset.id, (y) => ({ ...y, apps: y.apps.map((a) => (a.id === el.dataset.a ? { ...a, status: "rejected" } : a)) })); render(); toast(t("toast_declined")); },
+  reject: (el, e) => { e.stopPropagation(); save(async () => { await api.decide(el.dataset.id, el.dataset.a, "rejected"); render(); toast(t("toast_declined")); }); },
   openComplete: (el) => {
     const x = task(el.dataset.id);
     S.sheet = { fresh: true, type: "complete", id: x.id, drafts: x.apps.filter((a) => a.status === "accepted").map((a) => ({ v: a.v, rating: 5, text: t("default_review") })) };
@@ -1586,14 +1873,14 @@ const A = {
     refreshPreview(i);
   },
   tryClaim: (el) => { const i = +el.dataset.i, c = L(CLAIMS[0]); S.sheet.drafts[i].text = c; $("#rv-" + i).value = c; refreshPreview(i); },
-  completeTask: () => {
+  completeTask: () => save(async () => {
     const x = task(S.sheet.id), team = S.sheet.drafts.length;
     const reviews = S.sheet.drafts.map((d) => ({ vid: d.v.id, vname: d.v.name, author: x.req.name, rating: d.rating, text: d.text.trim(), ver: verify(d.text, d.rating, team) }));
-    update(x.id, (y) => ({ ...y, done: true, reviews: [...y.reviews, ...reviews] }));
-    const mine = reviews.find((r) => r.vid === ME);
-    if (mine) { const h = { easy: 1, moderate: 3, demanding: 4 }[x.diff]; S.ratings.push(mine.rating); S.hours += h; S.history.push({ title: x.title, cat: x.cat, when: D.today, h, r: mine.rating }); }
+    await api.complete(x.id, reviews);
+    const mine = reviews.find((v) => v.vid === ME);
+    if (mine && !LIVE) { const h = { easy: 1, moderate: 3, demanding: 4 }[x.diff]; S.ratings.push(mine.rating); S.hours += h; S.history.push({ title: x.title, cat: x.cat, when: D.today, h, r: mine.rating, by: x.req.name }); }
     S.sheet = null; render(); toast(t("toast_done"));
-  },
+  }),
 
   example: (el) => { const x = EXAMPLES[+el.dataset.i]; S.draft.title = L(x.title); S.draft.desc = L(x.desc); render(); },
   useSuggest: () => { const a = analyze(S.draft.title, S.draft.desc); if (!a) return; Object.assign(S.draft, { cat: a.cat, vols: a.vols, skills: a.skills, diff: a.diff }); render(); },
@@ -1606,9 +1893,11 @@ const A = {
     const d = S.draft, err = createErrors();
     if (err.title || err.desc || err.cat) { d.errors = true; render(); toast(t("fill_fields")); return; }
     const a = analyze(d.title, d.desc); const date = new Date(); date.setDate(date.getDate() + d.day); date.setHours(d.hour, 0, 0, 0);
-    S.tasks.unshift({ id: "t-" + uid(), title: d.title.trim(), desc: d.desc.trim(), cat: d.cat, area: d.area, dist: 0.4, date, dur: { easy: { h: 1, ap: true }, moderate: { h: "2–3", ap: false }, demanding: { h: 4, ap: true } }[d.diff], need: d.vols, req: S.me, skills: d.skills.length ? d.skills : a?.skills || ["kindness"], diff: d.diff, apps: [], done: false, reviews: [], createdAt: Date.now() });
-    S.draft = newDraft(); S.role = "requester"; S.tab = "home"; S.cat = null; S.q = ""; S.scroll.home = 0;
-    render(); window.scrollTo(0, 0); toast(t("toast_pub"));
+    save(async () => {
+      await api.createTask({ title: d.title.trim(), desc: d.desc.trim(), cat: d.cat, area: d.area, date, dur: { easy: { h: 1, ap: true }, moderate: { h: "2–3", ap: false }, demanding: { h: 4, ap: true } }[d.diff], need: d.vols, skills: d.skills.length ? d.skills : a?.skills || ["kindness"], diff: d.diff });
+      S.draft = newDraft(); S.role = "requester"; S.tab = "home"; S.cat = null; S.q = ""; S.scroll.home = 0;
+      render(); window.scrollTo(0, 0); toast(t("toast_pub"));
+    });
   },
 
   labTask: (el) => { S.lab.task = L(TASK_SAMPLES[+el.dataset.i]); render(); },
@@ -1630,19 +1919,28 @@ document.addEventListener("keydown", (e) => {
   if ((e.key === "Enter" || e.key === " ") && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); e.target.click(); }
   if (e.key === "Escape" && S.sheet) A.closeSheet();
 });
-document.addEventListener("submit", (e) => {
-  if (e.target.id !== "auth-form") return;
+document.addEventListener("submit", async (e) => {
+  const id = e.target.id;
+  if (id !== "auth-form" && id !== "code-form") return;
   e.preventDefault();
-  const f = S.authF, email = f.email.trim().toLowerCase();
-  if (S.auth === "register") {
-    f.err = !f.name.trim() ? "e_name" : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? "e_email" : f.pass.length < 6 ? "e_pass" : S.accounts[email] ? "e_exists" : "";
-    if (f.err) return render();
-    S.accounts[email] = { name: f.name.trim(), email, pass: f.pass };
-  } else {
-    const acc = S.accounts[email];
-    if (!acc || acc.pass !== f.pass) { f.err = "e_wrong"; return render(); }
+  const f = S.authF; if (f.busy) return;
+  const fail = (err) => { [f.err, f.errMsg] = errKey(err); f.busy = false; render(); };
+  if (id === "code-form") {
+    const code = f.code.replace(/\D/g, "");
+    if (code.length < 6) { f.err = "e_code"; return render(); }
+    f.busy = true; f.err = ""; render();
+    try { await auth.verify(f.pending, code); } catch (err) { fail(err); }
+    return;
   }
-  const acc = S.accounts[email]; S.authF = { name: "", email: "", pass: "", show: false, err: "" }; startSession(acc);
+  const email = f.email.trim().toLowerCase(), reg = S.auth === "register";
+  f.err = reg && !f.name.trim() ? "e_name" : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? "e_email" : f.pass.length < 6 ? "e_pass" : "";
+  if (f.err) return render();
+  f.busy = true; render();
+  try {
+    const pending = reg ? await auth.register(f.name.trim(), email, f.pass) : await auth.login(email, f.pass);
+    Object.assign(f, { pending, busy: false, code: "", pass: "", err: pending.err || "", resendAt: Date.now() + 60000 });
+    S.auth = "code"; render(); setTimeout(() => $("#f-code")?.focus(), 50);
+  } catch (err) { fail(err); }
 });
 document.addEventListener("input", (e) => {
   const el = e.target, v = el.value;
@@ -1650,6 +1948,7 @@ document.addEventListener("input", (e) => {
     case "f-name": S.authF.name = v; break;
     case "f-email": S.authF.email = v; break;
     case "f-pass": S.authF.pass = v; break;
+    case "f-code": S.authF.code = v; break;
     case "q": S.q = v; $("#feed").innerHTML = feedHTML(); $("#count").textContent = t("in_almaty", { n: visibleTasks().length }); el.parentElement.querySelector(".clear").hidden = !v; break;
     case "d-title": S.draft.title = v; $("#ai-slot").innerHTML = aiSlotHTML(); break;
     case "d-desc": S.draft.desc = v; $("#ai-slot").innerHTML = aiSlotHTML(); break;
@@ -1664,6 +1963,18 @@ document.addEventListener("input", (e) => {
 });
 
 render();
+if (LIVE) boot();
+// Resend countdown on the code screen.
+setInterval(() => {
+  const b = document.getElementById("resend"); if (!b || S.auth !== "code") return;
+  const wait = Math.max(0, Math.ceil((S.authF.resendAt - Date.now()) / 1000));
+  b.disabled = wait > 0; b.textContent = wait ? t("resend_in", { n: wait }) : t("resend");
+}, 1000);
+// Pick up other people's changes when the tab regains focus.
+window.addEventListener("focus", async () => {
+  if (!LIVE || !S.session || S.sheet || document.activeElement?.matches("input, textarea")) return;
+  try { await loadAll(); render(); } catch (e) { /* offline: keep what we have */ }
+});
 })();
 </script>
 </body>

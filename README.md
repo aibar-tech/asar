@@ -36,11 +36,18 @@ Open the project in Android Studio (Ladybug or newer) and run the `app` configur
 
 ## Web version
 
-`web/index.html` is a self-contained web version of ASAR with the same screens, demo flow and
-simulated AI. Open it in any browser (no build step or server needed); on phones it uses the
-bottom tab bar, on desktop a top navigation. It is available in Kazakh, Russian and English
-(switcher in the header; defaults to the browser language and remembers the choice). The
-simulated AI understands keywords in all three languages. State lives in memory and resets on reload.
+`web/index.html` is the ASAR website: the same screens, demo flow and simulated AI, in Kazakh,
+Russian and English (switcher in the header; it defaults to the browser language and remembers
+the choice). On phones it uses the bottom tab bar, on desktop a top navigation.
+
+It runs in two modes:
+
+- **Demo mode** (default, `web/config.js` left empty): no server; data lives in the browser tab and
+  the email code is shown on screen. Open the file in any browser.
+- **Connected mode**: a real Supabase (Postgres) database with accounts, requests, applications and
+  reviews, and **two-step sign-in**: password, then a 6-digit code sent by email. The database
+  enforces both steps through row-level security. Setup takes about 15 minutes:
+  see [`web/SETUP.md`](web/SETUP.md). Schema and demo content are in `web/supabase/`.
 
 ## Demo script (≈2 minutes)
 
