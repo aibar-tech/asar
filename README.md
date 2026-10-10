@@ -34,6 +34,12 @@ Open the project in Android Studio (Ladybug or newer) and run the `app` configur
 ./gradlew :app:installDebug           # install on a connected device/emulator
 ```
 
+## Web version
+
+`web/index.html` is a self-contained web version of ASAR with the same screens, demo flow and
+simulated AI. Open it in any browser (no build step or server needed); on phones it uses the
+bottom tab bar, on desktop a top navigation. State lives in memory and resets on reload.
+
 ## Demo script (≈2 minutes)
 
 1. **Welcome** → *Explore with a demo account* (or *Create account* with any name/email/6+ char password).
