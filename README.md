@@ -38,7 +38,9 @@ Open the project in Android Studio (Ladybug or newer) and run the `app` configur
 
 `web/index.html` is a self-contained web version of ASAR with the same screens, demo flow and
 simulated AI. Open it in any browser (no build step or server needed); on phones it uses the
-bottom tab bar, on desktop a top navigation. State lives in memory and resets on reload.
+bottom tab bar, on desktop a top navigation. It is available in Kazakh, Russian and English
+(switcher in the header; defaults to the browser language and remembers the choice). The
+simulated AI understands keywords in all three languages. State lives in memory and resets on reload.
 
 ## Demo script (≈2 minutes)
 
